@@ -5,6 +5,17 @@ export interface Coordinate {
   lng: number;
 }
 
+export interface NavigationStep {
+  instruction: string;
+  roadName: string;
+  distanceMeters: number;
+  durationSeconds: number;
+  maneuverType: string;
+  modifier?: string;
+  lat: number;
+  lng: number;
+}
+
 export interface RouteOptionData {
   id: string;
   name: string;
@@ -24,6 +35,7 @@ export interface RouteOptionData {
   };
   explanation: string;
   coordinates: [number, number][];
+  steps?: NavigationStep[];
 }
 
 export interface SafetyZonePOI {

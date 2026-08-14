@@ -58,6 +58,11 @@ export function setAuth(token: string, user: any) {
 export function clearAuth() {
   localStorage.removeItem('safesphere_token');
   localStorage.removeItem('safesphere_user');
+  localStorage.removeItem('safesphere_demo');
+  localStorage.removeItem('safesphere_latest_sos');
+  localStorage.removeItem('safesphere_user_reported_incidents');
+  localStorage.removeItem('safesphere_user_journeys');
+  localStorage.removeItem('safesphere_active_sos_alerts');
 }
 
 export function isAuthenticated(): boolean {

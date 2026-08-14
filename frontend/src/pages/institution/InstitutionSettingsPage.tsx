@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { InstitutionNav } from './InstitutionNav';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { EditProfileModal, type UserProfileData } from '../../components/EditProfileModal';
 import {
   Shield, Bell, Lock, Eye, MapPin, Smartphone,
-  Sliders, Download, Trash2, CheckCircle, RefreshCw, LogOut
+  Sliders, Download, Trash2, CheckCircle, RefreshCw, LogOut,
+  Edit3, User, Heart, Home
 } from 'lucide-react';
 
 export default function InstitutionSettingsPage() {
@@ -14,6 +16,7 @@ export default function InstitutionSettingsPage() {
 
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   // ── Settings States ────────────────────────────────────────────────────────
   // 1. Auto-SOS & SafeScore triggers
@@ -181,6 +184,34 @@ export default function InstitutionSettingsPage() {
         {/* ── Settings Sections Grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10">
           
+          {/* Section 0: User Profile & Personal Identity */}
+          <div className="lg:col-span-2 bg-[#111522]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#4f46e5] to-[#3730a3] flex items-center justify-center font-bold text-white text-lg shadow-[0_0_20px_rgba(79,70,229,0.4)]">
+                {profile?.name?.[0] || (isDemo ? 'A' : 'U')}
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <span>{profile?.name || (isDemo ? 'Aarav Sharma' : user?.email?.split('@')[0] || 'User')}</span>
+                  <span className="text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">
+                    {profile?.blood_type ? `Blood: ${profile.blood_type}` : 'Verified Profile'}
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {user?.email || (isDemo ? 'aarav.sharma@example.com' : '')} {profile?.phone ? `· ${profile.phone}` : ''} {profile?.home_address ? `· ${profile.home_address}` : ''}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsEditProfileOpen(true)}
+              className="bg-gradient-to-r from-[#4f46e5] to-[#4338ca] hover:from-[#6366f1] hover:to-[#4f46e5] text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-[0_4px_16px_rgba(79,70,229,0.35)] transition-all cursor-pointer border border-[#818cf8]/30"
+            >
+              <Edit3 size={14} />
+              <span>Edit Profile &amp; Medical Info</span>
+            </button>
+          </div>
+
           {/* Section 1: Auto-SOS & Proactive Safety Triggers */}
           <div className="bg-[#111522]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-5">
             <div className="border-b border-white/10 pb-3 flex items-center gap-2.5">
@@ -458,6 +489,26 @@ export default function InstitutionSettingsPage() {
           </div>
 
         </div>
+
+        {/* Edit Profile Modal */}
+        <EditProfileModal
+          isOpen={isEditProfileOpen}
+          onClose={() => setIsEditProfileOpen(false)}
+          initialProfile={{
+            name: profile?.name,
+            email: user?.email || '',
+            phone: profile?.phone,
+            bloodType: profile?.blood_type,
+            allergies: profile?.allergies,
+            medicalConditions: profile?.medical_conditions,
+            homeAddress: profile?.home_address,
+            workSafeZone: profile?.work_safe_zone,
+          }}
+          onSuccess={() => {
+            setSuccessMsg('User Profile and emergency medical details updated successfully!');
+            setTimeout(() => setSuccessMsg(''), 4500);
+          }}
+        />
       </main>
     </div>
   );

@@ -169,7 +169,6 @@ export function SafeSphereSidebar({ onTriggerEmergency }: SafeSphereSidebarProps
   );
 }
 
-// ── Right Route Analysis Panel ──
 interface RouteAnalysisPanelProps {
   routes: RouteOptionData[];
   selectedRouteId: string;
@@ -177,6 +176,8 @@ interface RouteAnalysisPanelProps {
   destinationAddress: string;
   onInitiateRoute: () => void;
   isRerouting?: boolean;
+  onSimulateRiskAlert?: () => void;
+  onReportIncident?: () => void;
 }
 
 export function RouteAnalysisPanel({
@@ -186,6 +187,8 @@ export function RouteAnalysisPanel({
   destinationAddress,
   onInitiateRoute,
   isRerouting = false,
+  onSimulateRiskAlert,
+  onReportIncident,
 }: RouteAnalysisPanelProps) {
   const activeRoute = routes.find((r) => r.id === selectedRouteId) || routes[0];
 
@@ -306,24 +309,33 @@ export function RouteAnalysisPanel({
                     <span>{route.distance} km</span>
                   </div>
 
-                  {/* Tag Pills */}
+                  {/* Tag Pills — show all 4, colour-coded by content */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {route.tags.slice(0, 3).map((tag, idx) => (
-                      <span
-                        key={idx}
-                        style={{
-                          background: tag.includes('Low') ? 'rgba(239, 68, 68, 0.12)' : 'rgba(255, 255, 255, 0.05)',
-                          border: `1px solid ${tag.includes('Low') ? 'rgba(239, 68, 68, 0.25)' : 'rgba(255, 255, 255, 0.07)'}`,
-                          color: tag.includes('Low') ? '#FCA5A5' : '#94A3B8',
-                          fontSize: '0.68rem',
-                          fontWeight: 600,
-                          padding: '2px 7px',
-                          borderRadius: 6,
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                    {route.tags.slice(0, 4).map((tag, tagIdx) => {
+                      const isWarning = tag.includes('⚠️') || tag.includes('🌑') || tag.includes('No police') || tag.includes('Unlit');
+                      const isSafe    = tag.includes('✅') || tag.includes('🛡️') || tag.includes('Most policed') || tag.includes('Recommended');
+                      const isRoad    = tag.includes('🛣️') || tag.includes('🏙️') || tag.includes('🏘️') || tag.includes('boulevard') || tag.includes('urban') || tag.includes('lanes');
+                      const isInfo    = tag.includes('⚖️') || tag.includes('⚡') || tag.includes('👮') || tag.includes('🏥') || tag.includes('📹');
+                      const bg     = isWarning ? 'rgba(239,68,68,0.12)'  : isSafe ? 'rgba(79,70,229,0.15)'  : isRoad ? 'rgba(100,116,139,0.12)' : isInfo ? 'rgba(56,189,248,0.10)' : 'rgba(255,255,255,0.05)';
+                      const border = isWarning ? 'rgba(239,68,68,0.3)'   : isSafe ? 'rgba(129,140,248,0.3)' : isRoad ? 'rgba(100,116,139,0.25)' : isInfo ? 'rgba(56,189,248,0.25)'  : 'rgba(255,255,255,0.07)';
+                      const color  = isWarning ? '#FCA5A5'                : isSafe ? '#a5b4fc'               : isRoad ? '#94A3B8'                : isInfo ? '#7dd3fc'               : '#94A3B8';
+                      return (
+                        <span
+                          key={tagIdx}
+                          style={{
+                            background: bg,
+                            border: `1px solid ${border}`,
+                            color,
+                            fontSize: '0.68rem',
+                            fontWeight: 600,
+                            padding: '2px 7px',
+                            borderRadius: 6,
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -348,6 +360,61 @@ export function RouteAnalysisPanel({
           <p style={{ color: '#94A3B8', lineHeight: 1.5, margin: 0 }}>{activeRoute.explanation}</p>
         </div>
       )}
+
+      {/* Action Buttons: Report Incident & Simulate Risk Alert */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
+        {onReportIncident && (
+          <button
+            onClick={onReportIncident}
+            style={{
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              borderRadius: 12,
+              padding: '11px',
+              color: '#FCA5A5',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)'}
+          >
+            <AlertTriangle size={15} color="#ef4444" />
+            <span>Report Hazard on Route</span>
+          </button>
+        )}
+
+        {onSimulateRiskAlert && (
+          <button
+            onClick={onSimulateRiskAlert}
+            style={{
+              background: 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(245, 158, 11, 0.35)',
+              borderRadius: 12,
+              padding: '11px',
+              color: '#FBBF24',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(245, 158, 11, 0.2)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)'}
+          >
+            <Zap size={15} color="#FBBF24" />
+            <span>Simulate Path Risk Alert</span>
+          </button>
+        )}
+      </div>
 
       {/* Large Bottom Primary CTA */}
       <button

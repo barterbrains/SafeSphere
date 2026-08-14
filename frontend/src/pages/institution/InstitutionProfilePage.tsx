@@ -3,12 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { InstitutionNav } from './InstitutionNav';
+import { EditProfileModal, type UserProfileData } from '../../components/EditProfileModal';
+import { User, Edit3, CheckCircle2 } from 'lucide-react';
 
 export default function InstitutionProfilePage() {
   const navigate = useNavigate();
   const { user, profile: authProfile, signOut, isDemo, refreshProfile } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'settings'>('profile');
   const [loadingRealData, setLoadingRealData] = useState(!isDemo);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [profileToast, setProfileToast] = useState<string | null>(null);
 
   // ── Profile state ──────
   const [profile, setProfile] = useState({
@@ -24,6 +28,7 @@ export default function InstitutionProfilePage() {
     memberTier:       isDemo ? 'SafeSphere Pro Guardian'             : 'Verified Member',
     verifiedPhone:    isDemo ? true : !!authProfile?.phone,
     verifiedEmail:    isDemo ? true : !!user?.email,
+    emergencyNotes:   isDemo ? 'Emergency contact priority: Dr. Meera Sharma' : '',
   });
 
   // ── Trusted contacts state ───
@@ -365,6 +370,15 @@ export default function InstitutionProfilePage() {
                 <p className="text-indigo-400 text-xs font-semibold mt-0.5">{profile.memberTier}</p>
                 <p className="text-slate-400 text-xs mt-1">{profile.email} {profile.phone ? `· ${profile.phone}` : ''}</p>
 
+                {/* Edit Profile Action Button */}
+                <button
+                  onClick={() => setIsEditProfileOpen(true)}
+                  className="mt-3.5 w-full bg-gradient-to-r from-[#4f46e5] to-[#4338ca] hover:from-[#6366f1] hover:to-[#4f46e5] text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(79,70,229,0.35)] transition-all cursor-pointer border border-[#818cf8]/30"
+                >
+                  <Edit3 size={14} />
+                  <span>Edit Profile</span>
+                </button>
+
                 <div className="w-full border-t border-white/10 my-5" />
 
                 {/* Emergency Medical Info */}
@@ -652,6 +666,34 @@ export default function InstitutionProfilePage() {
         {activeSubTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10">
             
+            {/* Box 0: User Profile & Account Summary */}
+            <div className="lg:col-span-2 bg-[#111522]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#4f46e5] to-[#3730a3] flex items-center justify-center font-bold text-white text-lg shadow-[0_0_20px_rgba(79,70,229,0.4)]">
+                  {profile.name?.[0] || 'U'}
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>{profile.name}</span>
+                    <span className="text-[11px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-semibold">
+                      {profile.memberTier}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {profile.email} {profile.phone ? `· ${profile.phone}` : ''} {profile.bloodType ? `· Blood: ${profile.bloodType}` : ''}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsEditProfileOpen(true)}
+                className="bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-200 hover:text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-lg"
+              >
+                <Edit3 size={14} />
+                <span>Edit User Profile &amp; Medical Info</span>
+              </button>
+            </div>
+
             {/* Box 1: Auto-SOS Triggers & Route Engine Defaults */}
             <div className="bg-[#111522]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-5">
               <div className="border-b border-white/10 pb-3">
@@ -922,6 +964,44 @@ export default function InstitutionProfilePage() {
           </div>
         )}
 
+        {/* Profile Update Toast */}
+        {profileToast && (
+          <div style={{
+            position: 'fixed',
+            bottom: 30,
+            right: 30,
+            zIndex: 99999,
+            background: 'rgba(16, 185, 129, 0.95)',
+            color: '#FFFFFF',
+            padding: '12px 20px',
+            borderRadius: 14,
+            boxShadow: '0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(16,185,129,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            backdropFilter: 'blur(10px)',
+          }}>
+            <CheckCircle2 size={18} />
+            <span>{profileToast}</span>
+          </div>
+        )}
+
+        {/* Edit Profile Modal */}
+        <EditProfileModal
+          isOpen={isEditProfileOpen}
+          onClose={() => setIsEditProfileOpen(false)}
+          initialProfile={profile}
+          onSuccess={(updated) => {
+            setProfile(prev => ({
+              ...prev,
+              ...updated,
+            }));
+            setProfileToast('Profile & Emergency Medical details updated successfully!');
+            setTimeout(() => setProfileToast(null), 4500);
+          }}
+        />
       </main>
     </div>
   );

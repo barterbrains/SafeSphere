@@ -20,21 +20,39 @@ export default function InstitutionIncidentsPage() {
 
     async function loadUserAuditLogs() {
       try {
-        const { data } = await supabase
+        const { data: sosRes } = await supabase
           .from('sos_incidents')
           .select('*')
           .eq('user_id', currentUserId)
           .order('created_at', { ascending: false });
 
-        if (data) {
-          setRealIncidents(data.map(d => ({
-            id: `#AUD-${d.id.slice(0, 5).toUpperCase()}`,
-            location: d.location_name || 'Delhi NCR Region',
-            type: d.type || 'Emergency SOS',
-            severity: d.status === 'active' ? 'HIGH' : 'LOW',
-            time: new Date(d.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-          })));
-        }
+        let localIncData: any[] = [];
+        try {
+          const raw = localStorage.getItem(`safesphere_user_reported_incidents_${currentUserId}`);
+          if (raw) localIncData = JSON.parse(raw);
+        } catch {}
+
+        const sosData = (sosRes || []).map((d: any) => ({
+          id: `#SOS-${d.id.slice(0, 5).toUpperCase()}`,
+          location: d.location_name || 'Delhi NCR Region',
+          type: d.type || 'Emergency SOS',
+          severity: d.status?.includes('CRITICAL') || d.status?.includes('HIGH') ? 'HIGH' : 'MEDIUM',
+          time: new Date(d.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          source: 'SOS',
+        }));
+
+        const incData = localIncData.map((d: any) => ({
+          id: `#INC-${d.id.slice(-5).toUpperCase()}`,
+          location: d.address || 'Delhi NCR Region',
+          type: d.type || 'Safety Hazard',
+          severity: d.severity === 'critical' ? 'HIGH' : d.severity === 'high' ? 'HIGH' : d.severity === 'medium' ? 'MEDIUM' : 'LOW',
+          time: new Date(d.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          source: 'Community Report',
+        }));
+
+        // Merge and sort by time (most recent first)
+        const merged = [...sosData, ...incData];
+        setRealIncidents(merged);
       } catch (err) {
         console.error('Error fetching real incident audits:', err);
       } finally {

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, MapPin, AlertTriangle, ShieldCheck, Activity, Users, ArrowLeft } from 'lucide-react';
 import SafeSphereMap from '../components/SafeSphereMap';
 import { SafeSphereSidebar, RouteAnalysisPanel } from '../components/RouteAnalysisPanel';
+import { RiskAlertSafetyModal } from '../components/RiskAlertSafetyModal';
 import { DELHI_DEMO_ROUTES, DELHI_SAFETY_POIS } from '../mock/delhiRouteData';
 import type { RouteOptionData } from '../mock/delhiRouteData';
 import { apiFetch } from '../utils';
@@ -32,19 +33,20 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState(destination.address);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isRiskModalOpen, setIsRiskModalOpen] = useState(false);
 
   // Search autocomplete
   const handleSelectDestination = (destItem: any) => {
     setDestination({
       lat: destItem.latitude || destItem.lat || 28.6129,
       lng: destItem.longitude || destItem.lng || 77.2295,
-      address: destItem.address || destItem.name,
+      address: destItem.formattedAddress || destItem.address || destItem.name,
     });
-    setSearchQuery(destItem.address || destItem.name);
+    setSearchQuery(destItem.formattedAddress || destItem.address || destItem.name);
     setIsSearchOpen(false);
   };
 
-  // Initiate Route → Journey Guardian Flow
+  // Start Journey Flow
   const handleInitiateRoute = async () => {
     const activeRoute = routes.find(r => r.id === selectedRouteId) || routes[0];
     try {
@@ -52,11 +54,9 @@ export default function HomePage() {
         method: 'POST',
         body: JSON.stringify({
           routeId: activeRoute.id,
-          origin,
-          destination,
-          routeType: activeRoute.routeType,
-          initialSafeScore: activeRoute.safeScore,
-          eta: activeRoute.duration,
+          originName: origin.address,
+          destinationName: destination.address,
+          safeScore: activeRoute.safeScore,
           distance: activeRoute.distance,
         }),
       });
@@ -68,18 +68,22 @@ export default function HomePage() {
 
   // Simulated Safety Alert Event demo trigger
   const handleSimulateIncident = () => {
-    setIsRerouting(true);
-    setRoutes(prev => prev.map(r => {
-      if (r.id === selectedRouteId) {
-        return {
-          ...r,
-          safeScore: Math.max(50, r.safeScore - 26),
-          tags: ['Elevated Risk Detected Ahead', ...r.tags],
-        };
-      }
-      return r;
-    }));
+    setIsRiskModalOpen(true);
   };
+
+  const handleRerouteSafe = () => {
+    const otherRoutes = routes.filter(r => r.id !== selectedRouteId);
+    const safestAlt = otherRoutes.length > 0
+      ? otherRoutes.reduce((prev, curr) => curr.safeScore > prev.safeScore ? curr : prev, otherRoutes[0])
+      : routes[0];
+
+    if (safestAlt) {
+      setSelectedRouteId(safestAlt.id);
+      setIsRerouting(true);
+    }
+  };
+
+  const activeRoute = routes.find(r => r.id === selectedRouteId) || routes[0];
 
   return (
     <div style={{
@@ -115,13 +119,14 @@ export default function HomePage() {
           display: 'flex',
           gap: 12,
           alignItems: 'center',
+          maxWidth: 'calc(100vw - 440px)',
         }}>
-          {/* Quick Destination Search Box */}
-          <div style={{ position: 'relative', width: 320 }}>
+          {/* Destination Search Box */}
+          <div style={{ position: 'relative', width: 340 }}>
             <div style={{
               background: 'rgba(18, 21, 34, 0.92)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: 12,
+              borderRadius: 14,
               padding: '10px 14px',
               display: 'flex',
               alignItems: 'center',
@@ -129,10 +134,10 @@ export default function HomePage() {
               boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
               backdropFilter: 'blur(12px)',
             }}>
-              <Search size={16} color="#818cf8" />
+              <Search size={17} color="#818cf8" />
               <input
                 type="text"
-                placeholder="Search Delhi destination..."
+                placeholder="Search destination in Delhi..."
                 value={searchQuery}
                 onFocus={() => setIsSearchOpen(true)}
                 onChange={e => {
@@ -143,7 +148,8 @@ export default function HomePage() {
                   background: 'transparent',
                   border: 'none',
                   color: '#FFFFFF',
-                  fontSize: '0.85rem',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
                   outline: 'none',
                   fontFamily: 'inherit',
                   width: '100%',
@@ -151,31 +157,26 @@ export default function HomePage() {
               />
             </div>
 
-            {/* Autocomplete Dropdown */}
-            {isSearchOpen && (
+            {/* Autocomplete dropdown */}
+            {isSearchOpen && searchResults.length > 0 && (
               <div style={{
                 position: 'absolute',
                 top: 50,
                 left: 0,
                 right: 0,
-                background: '#151928',
+                background: '#121522',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 borderRadius: 12,
                 overflow: 'hidden',
-                boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
-                zIndex: 1001,
+                boxShadow: '0 12px 32px rgba(0,0,0,0.7)',
+                zIndex: 1002,
               }}>
-                {[
-                  { id: 'loc-1', address: 'Connaught Place, New Delhi', lat: 28.6315, lng: 77.2167 },
-                  { id: 'loc-2', address: 'India Gate, New Delhi', lat: 28.6129, lng: 77.2295 },
-                  { id: 'loc-3', address: 'Rajouri Garden, New Delhi', lat: 28.6473, lng: 77.1221 },
-                  { id: 'loc-4', address: 'Saket Select CityWalk, New Delhi', lat: 28.5283, lng: 77.2185 },
-                ].map((res, i) => (
+                {searchResults.map((res, i) => (
                   <div
-                    key={res.id || i}
+                    key={i}
                     onClick={() => handleSelectDestination(res)}
                     style={{
-                      padding: '12px 14px',
+                      padding: '10px 14px',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 10,
@@ -198,13 +199,13 @@ export default function HomePage() {
           <button
             onClick={handleSimulateIncident}
             style={{
-              background: 'rgba(239, 68, 68, 0.2)',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              color: '#FCA5A5',
+              background: 'rgba(245, 158, 11, 0.18)',
+              border: '1px solid rgba(245, 158, 11, 0.45)',
+              color: '#FBBF24',
               padding: '10px 14px',
               borderRadius: 12,
               fontSize: '0.78rem',
-              fontWeight: 700,
+              fontWeight: 800,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -225,8 +226,6 @@ export default function HomePage() {
             onSelectRoute={id => setSelectedRouteId(id)}
             origin={origin}
             destination={destination}
-            pois={DELHI_SAFETY_POIS}
-            showSafetyZones={true}
           />
         </div>
 
@@ -246,9 +245,19 @@ export default function HomePage() {
             destinationAddress={destination.address}
             onInitiateRoute={handleInitiateRoute}
             isRerouting={isRerouting}
+            onSimulateRiskAlert={handleSimulateIncident}
           />
         </div>
       </div>
+
+      {/* Risk Alert & Safety Check Modal */}
+      <RiskAlertSafetyModal
+        isOpen={isRiskModalOpen}
+        onClose={() => setIsRiskModalOpen(false)}
+        currentRouteName={activeRoute.name}
+        currentLocation={{ lat: origin.lat, lng: origin.lng, address: destination.address }}
+        onRerouteSafe={handleRerouteSafe}
+      />
 
       <style>{`
         @media (max-width: 1024px) {

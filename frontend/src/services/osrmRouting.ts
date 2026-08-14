@@ -5,8 +5,9 @@
 // 2. Safe Lateral Corridor A (offset perpendicular waypoint via real road network)
 // 3. Safe Lateral Corridor B (opposite offset perpendicular waypoint via real road network)
 // Every coordinate is strictly converted to Leaflet [lat, lng] format.
+// Extracts turn-by-turn navigation steps with street names and maneuvers.
 
-import type { RouteOptionData } from '../mock/delhiRouteData';
+import type { RouteOptionData, NavigationStep } from '../mock/delhiRouteData';
 
 export interface OSRMCoordinate {
   lat: number;
@@ -20,13 +21,60 @@ export interface FetchRoutesResult {
 }
 
 /**
+ * Parses OSRM turn-by-turn steps into friendly user navigation instructions.
+ */
+function parseOSRMSteps(routeObj: any): NavigationStep[] {
+  const steps: NavigationStep[] = [];
+  const legs = routeObj?.legs || [];
+
+  legs.forEach((leg: any) => {
+    (leg.steps || []).forEach((s: any) => {
+      const type = s.maneuver?.type || 'turn';
+      const modifier = s.maneuver?.modifier || '';
+      const name = s.name ? s.name.trim() : 'walkway';
+      const loc = s.maneuver?.location || [0, 0];
+
+      let instruction = '';
+      if (type === 'depart') {
+        instruction = `Head ${modifier || 'forward'} on ${name}`;
+      } else if (type === 'arrive') {
+        instruction = `Arrive at destination`;
+      } else if (type === 'turn') {
+        instruction = `Turn ${modifier || 'forward'} onto ${name}`;
+      } else if (type === 'continue' || type === 'new name') {
+        instruction = `Continue straight onto ${name}`;
+      } else if (type === 'roundabout' || type === 'rotary') {
+        instruction = `At the roundabout, take exit onto ${name}`;
+      } else if (type === 'fork') {
+        instruction = `Take the ${modifier || ''} fork onto ${name}`;
+      } else {
+        instruction = `${modifier ? `Turn ${modifier}` : 'Follow'} onto ${name}`;
+      }
+
+      steps.push({
+        instruction,
+        roadName: name,
+        distanceMeters: Math.round(s.distance || 0),
+        durationSeconds: Math.round(s.duration || 0),
+        maneuverType: type,
+        modifier,
+        lat: loc[1],
+        lng: loc[0],
+      });
+    });
+  });
+
+  return steps;
+}
+
+/**
  * Calculates intermediate waypoint biased along parallel road corridors
  * Offset is computed perpendicular to the origin-destination bearing.
  */
 function getOffsetMidpoint(
   origin: OSRMCoordinate,
   destination: OSRMCoordinate,
-  offsetFactor: number // Positive for right-side corridor, negative for left-side corridor
+  offsetFactor: number
 ): OSRMCoordinate {
   const midLat = (origin.lat + destination.lat) / 2;
   const midLng = (origin.lng + destination.lng) / 2;
@@ -51,6 +99,7 @@ async function fetchSingleOSRMPath(coords: OSRMCoordinate[]): Promise<{
   coordinates: [number, number][];
   distanceKm: number;
   durationMins: number;
+  steps: NavigationStep[];
 } | null> {
   const coordString = coords.map(c => `${c.lng},${c.lat}`).join(';');
   const url = `https://router.project-osrm.org/route/v1/foot/${coordString}?geometries=geojson&overview=full&steps=true`;
@@ -77,6 +126,7 @@ async function fetchSingleOSRMPath(coords: OSRMCoordinate[]): Promise<{
       coordinates: leafletCoords,
       distanceKm: Math.round((mainRoute.distance / 1000) * 10) / 10,
       durationMins: Math.round(mainRoute.duration / 60),
+      steps: parseOSRMSteps(mainRoute),
     };
   } catch {
     return null;
@@ -107,6 +157,7 @@ export async function fetchOSRMRealRoutes(
       coordinates: [number, number][];
       distanceKm: number;
       durationMins: number;
+      steps: NavigationStep[];
     }[] = [];
 
     // Add all distinct direct alternatives returned by OSRM
@@ -116,6 +167,7 @@ export async function fetchOSRMRealRoutes(
         coordinates: coords,
         distanceKm: Math.round((r.distance / 1000) * 10) / 10,
         durationMins: Math.round(r.duration / 60),
+        steps: parseOSRMSteps(r),
       });
     });
 
@@ -162,6 +214,7 @@ export async function fetchOSRMRealRoutes(
         },
         explanation: 'Follows primary arterial corridors with continuous street illumination, dedicated pedestrian footways, and 24/7 security presence.',
         coordinates: discoveredRoutes[0].coordinates,
+        steps: discoveredRoutes[0].steps,
       },
       {
         id: `route-balanced-${Date.now()}-2`,
@@ -182,6 +235,7 @@ export async function fetchOSRMRealRoutes(
         },
         explanation: 'Follows secondary transit avenue. Balances walking pace with good ambient visibility and active commercial storefronts.',
         coordinates: discoveredRoutes[1] ? discoveredRoutes[1].coordinates : discoveredRoutes[0].coordinates,
+        steps: discoveredRoutes[1]?.steps || discoveredRoutes[0].steps,
       },
       {
         id: `route-fastest-${Date.now()}-3`,
@@ -202,6 +256,7 @@ export async function fetchOSRMRealRoutes(
         },
         explanation: 'Direct shortest path. Faster transit time but passes through sectors with reduced lighting and lower night footfall.',
         coordinates: discoveredRoutes[2] ? discoveredRoutes[2].coordinates : discoveredRoutes[0].coordinates,
+        steps: discoveredRoutes[2]?.steps || discoveredRoutes[0].steps,
       },
     ];
 

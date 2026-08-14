@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, Eye, EyeOff } from 'lucide-react';
+import { Shield, Eye, EyeOff, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -12,7 +13,9 @@ export default function RegisterPage() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMsg, setResendMsg] = useState('');
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,18 +24,77 @@ export default function RegisterPage() {
     const { error: signUpError } = await signUp(email.trim(), password, name.trim(), 'consumer');
     setLoading(false);
     if (signUpError) {
-      // Supabase free tier caps email sends — show a helpful message
       if (signUpError.toLowerCase().includes('rate limit') || signUpError.toLowerCase().includes('email rate')) {
-        setError('Too many sign-up attempts. Please wait a few minutes and try again, or contact support.');
+        setError('Too many sign-up attempts. Please wait a few minutes and try again.');
+      } else if (signUpError.toLowerCase().includes('already registered') || signUpError.toLowerCase().includes('user already')) {
+        setError('This email is already registered. Please sign in instead.');
       } else {
         setError(signUpError);
       }
       return;
     }
-    setSuccess('Account created! You can now sign in directly.');
-    setTimeout(() => navigate('/login'), 2000);
+    setEmailSent(true);
   };
 
+  const handleResend = async () => {
+    setResendLoading(true);
+    setResendMsg('');
+    const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim() });
+    setResendLoading(false);
+    setResendMsg(error ? 'Could not resend — try again in a minute.' : 'Confirmation email resent! Check your inbox.');
+  };
+
+  // ── Email Confirmation Screen ─────────────────────────────────────────────
+  if (emailSent) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a12', padding: 24, fontFamily: "'Inter', sans-serif", color: '#e2e2e2' }}>
+        <div style={{ width: '100%', maxWidth: 420, textAlign: 'center' }}>
+          <div style={{ background: 'rgba(18, 18, 30, 0.75)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 28, padding: '48px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, boxShadow: '0 24px 50px -12px rgba(0,0,0,0.6)' }}>
+            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(79,70,229,0.15)', border: '1px solid rgba(79,70,229,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Mail size={32} color="#818cf8" />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#fff', margin: '0 0 8px' }}>Check Your Email</h2>
+              <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
+                We sent a confirmation link to<br />
+                <strong style={{ color: '#e2e8f0' }}>{email}</strong><br />
+                Click the link in that email to activate your account, then come back here to sign in.
+              </p>
+            </div>
+
+            <div style={{ width: '100%', background: 'rgba(79,70,229,0.1)', border: '1px solid rgba(79,70,229,0.2)', borderRadius: 12, padding: '14px 16px', fontSize: '0.82rem', color: '#a5b4fc', lineHeight: 1.5, textAlign: 'left' }}>
+              📬 <strong>Didn't get it?</strong> Check your spam/junk folder, or use the button below to resend.
+            </div>
+
+            {resendMsg && (
+              <div style={{ width: '100%', padding: '10px 14px', background: resendMsg.includes('resent') ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${resendMsg.includes('resent') ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: 10, color: resendMsg.includes('resent') ? '#6ee7b7' : '#fca5a5', fontSize: '0.82rem' }}>
+                {resendMsg}
+              </div>
+            )}
+
+            <button
+              onClick={handleResend}
+              disabled={resendLoading}
+              style={{ width: '100%', padding: '14px', borderRadius: 12, background: 'rgba(79,70,229,0.15)', border: '1px solid rgba(79,70,229,0.3)', color: '#a5b4fc', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'inherit', opacity: resendLoading ? 0.6 : 1 }}
+            >
+              {resendLoading ? 'Resending...' : '📨 Resend Confirmation Email'}
+            </button>
+
+            <button
+              onClick={() => navigate('/login')}
+              style={{ width: '100%', padding: '14px', borderRadius: 12, background: 'linear-gradient(135deg, #4f46e5, #3730a3)', border: 'none', color: '#fff', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              I've confirmed — Sign In <ArrowRight size={16} />
+            </button>
+
+            <p style={{ color: '#475569', fontSize: '0.78rem', margin: 0 }}>After confirming your email, sign in using your credentials.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Registration Form ─────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a12', padding: 24, fontFamily: "'Inter', sans-serif", color: '#e2e2e2' }}>
       <div style={{ width: '100%', maxWidth: 420 }}>
@@ -98,15 +160,10 @@ export default function RegisterPage() {
                 {error}
               </div>
             )}
-            {success && (
-              <div style={{ padding: '10px 14px', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10, color: '#6ee7b7', fontSize: '0.82rem' }}>
-                {success}
-              </div>
-            )}
 
             <button
               type="submit" disabled={loading}
-              style={{ width: '100%', height: 50, borderRadius: 12, border: '1px solid rgba(129,140,248,0.35)', fontWeight: 700, fontSize: '0.95rem', color: '#fff', background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(79,70,229,0.45)', cursor: loading ? 'not-allowed' : 'pointer', marginTop: 4, transition: 'all 0.2s' }}
+              style={{ width: '100%', height: 50, borderRadius: 12, border: '1px solid rgba(129,140,248,0.35)', fontWeight: 700, fontSize: '0.95rem', color: '#fff', background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 18px rgba(79,70,229,0.45)', cursor: loading ? 'not-allowed' : 'pointer', marginTop: 4, transition: 'all 0.2s', fontFamily: 'inherit' }}
             >
               {loading ? 'Creating account...' : 'Create Account'}
             </button>

@@ -51,6 +51,10 @@ function createCustomIcon(marker: MapMarkerData) {
     bgColor = '#f43f5e';
     pulseColor = 'rgba(244, 63, 94, 0.5)';
     borderColor = '#be123c';
+  } else if (marker.type === 'guardian' || marker.type === 'user_location') {
+    bgColor = '#10b981';
+    pulseColor = 'rgba(16, 185, 129, 0.5)';
+    borderColor = '#047857';
   }
 
   const html = `

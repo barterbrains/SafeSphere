@@ -37,7 +37,7 @@ export default function InstitutionAnalyticsPage() {
       return;
     }
 
-    // Real Account: Query Supabase for real user incident history and metrics
+    // Real Account: Query Supabase for both community incident reports AND SOS incidents
     async function loadRealAnalytics() {
       if (!user?.id) {
         setLoading(false);
@@ -45,22 +45,89 @@ export default function InstitutionAnalyticsPage() {
       }
 
       try {
-        const { data: userIncidents } = await supabase
+        // Fetch from sos_incidents in Supabase
+        const { data: sosIncidents } = await supabase
           .from('sos_incidents')
           .select('*')
           .eq('user_id', user.id);
 
-        const total = userIncidents?.length || 0;
+        // Fetch any locally reported incidents strictly for this user
+        let localIncidents: any[] = [];
+        try {
+          const raw = localStorage.getItem(`safesphere_user_reported_incidents_${user.id}`);
+          if (raw) localIncidents = JSON.parse(raw);
+        } catch {}
+
+        // Merge all incidents into one unified array
+        const allIncidents = [
+          ...(sosIncidents || []).map((d: any) => ({
+            id: d.id,
+            type: d.type || 'Emergency SOS',
+            severity: d.status?.includes('CRITICAL') ? 'critical' : d.status?.includes('HIGH') ? 'high' : 'medium',
+            location: d.location_name || 'Delhi NCR',
+            lat: d.lat,
+            lng: d.lng,
+            created_at: d.created_at,
+            source: 'sos',
+          })),
+          ...localIncidents.map((d: any) => ({
+            id: d.id,
+            type: d.type || 'Safety Hazard',
+            severity: d.severity || 'medium',
+            location: d.address || 'Delhi NCR',
+            lat: d.lat,
+            lng: d.lng,
+            created_at: d.created_at,
+            source: 'community',
+          })),
+        ];
+
+        const total = allIncidents.length;
+
+        // Build monthly trend from real data
+        const monthBuckets: Record<string, { incidents: number; safeScore: number }> = {};
+        allIncidents.forEach((inc: any) => {
+          const d = new Date(inc.created_at);
+          const key = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          if (!monthBuckets[key]) monthBuckets[key] = { incidents: 0, safeScore: 85 };
+          monthBuckets[key].incidents += 1;
+          monthBuckets[key].safeScore = Math.max(40, monthBuckets[key].safeScore - 3);
+        });
+        const incidentTrend = Object.entries(monthBuckets)
+          .map(([month, v]) => ({ month, incidents: v.incidents, safeScore: v.safeScore }))
+          .slice(-6);
+
+        // Build top risk locations from community incidents
+        const locationBuckets: Record<string, { name: string; incidents: number; avgSafeScore: number }> = {};
+        communityIncidents.forEach((inc: any) => {
+          const loc = inc.address || 'Unknown Area';
+          if (!locationBuckets[loc]) locationBuckets[loc] = { name: loc, incidents: 0, avgSafeScore: 60 };
+          locationBuckets[loc].incidents += 1;
+          locationBuckets[loc].avgSafeScore = Math.max(35, locationBuckets[loc].avgSafeScore - 5);
+        });
+        const topRiskLocations = Object.values(locationBuckets)
+          .sort((a, b) => b.incidents - a.incidents)
+          .slice(0, 5)
+          .map(loc => ({ ...loc, zone: 'User Reported Zone' }));
+
+        // Find most common type
+        const typeCounts: Record<string, number> = {};
+        allIncidents.forEach((inc: any) => {
+          typeCounts[inc.type] = (typeCounts[inc.type] || 0) + 1;
+        });
+        const mostCommon = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0];
+
+        const resolved = allIncidents.filter((i: any) => i.source === 'community' || i.severity !== 'critical').length;
 
         setData({
           summary: {
             totalIncidents: total,
-            resolvedRate: total > 0 ? 100 : 0,
-            avgResponseTime: total > 0 ? 'Instant SMS' : '—',
-            mostCommonType: total > 0 ? (userIncidents?.[0]?.type || 'Emergency SOS') : 'None recorded',
+            resolvedRate: total > 0 ? Math.round((resolved / total) * 100 * 10) / 10 : 0,
+            avgResponseTime: total > 0 ? 'Instant' : '—',
+            mostCommonType: mostCommon ? mostCommon[0] : 'None recorded',
           },
-          incidentTrend: [],
-          topRiskLocations: [],
+          incidentTrend,
+          topRiskLocations,
         });
       } catch (err) {
         console.error('Error fetching real analytics:', err);

@@ -43,10 +43,15 @@ export default function LoginPage() {
     const { error: signInError } = await signIn(email.trim(), password.trim());
     setLoading(false);
     if (signInError) {
-      setError(signInError);
+      if (signInError.toLowerCase().includes('email not confirmed') || signInError.toLowerCase().includes('not confirmed')) {
+        setError('📧 Your email is not confirmed yet. Please check your inbox (and spam folder) and click the confirmation link we sent you.');
+      } else if (signInError.toLowerCase().includes('invalid login') || signInError.toLowerCase().includes('invalid credentials')) {
+        setError('Incorrect email or password. Please try again.');
+      } else {
+        setError(signInError);
+      }
       return;
     }
-    // All users land on the main Command Centre dashboard
     navigate('/institution/overview');
   };
 

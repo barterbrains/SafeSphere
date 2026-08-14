@@ -186,9 +186,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    // Clear user specific keys if user id is known
+    if (user?.id) {
+      localStorage.removeItem(`safesphere_latest_sos_${user.id}`);
+      localStorage.removeItem(`safesphere_user_reported_incidents_${user.id}`);
+      localStorage.removeItem(`safesphere_user_journeys_${user.id}`);
+    }
     localStorage.removeItem('safesphere_demo');
     localStorage.removeItem('safesphere_token');
     localStorage.removeItem('safesphere_user');
+    localStorage.removeItem('safesphere_latest_sos');
+    localStorage.removeItem('safesphere_user_reported_incidents');
+    localStorage.removeItem('safesphere_user_journeys');
+    localStorage.removeItem('safesphere_active_sos_alerts');
     setIsDemo(false);
     await supabase.auth.signOut();
   }
