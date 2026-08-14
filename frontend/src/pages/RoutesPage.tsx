@@ -10,9 +10,12 @@ import { apiFetch } from '../utils';
 import { fetchOSRMRealRoutes } from '../services/osrmRouting';
 import { searchGeocodingNominatim, type GeocodingResult } from '../services/geocoding';
 import { fetchEnvironmentalSafetyData, type EnvironmentalSafetyFeature } from '../services/overpassEnvironmentalData';
+import { fetchIncidentsAlongRoute, reportIncidentToSupabase, type UserReportedIncident } from '../services/incidentService';
+import { useAuth } from '../context/AuthContext';
 
 export default function RoutesPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const destAddressParam = searchParams.get('destAddress') || 'India Gate, New Delhi';
   const originAddressParam = searchParams.get('originAddress') || 'Connaught Place, New Delhi';
@@ -39,6 +42,17 @@ export default function RoutesPage() {
   // Environmental Safety Features from Overpass API
   const [environmentalFeatures, setEnvironmentalFeatures] = useState<EnvironmentalSafetyFeature[]>([]);
   const [isLoadingOverpass, setIsLoadingOverpass] = useState(false);
+
+  // Real User Reported Incidents from Supabase
+  const [reportedIncidents, setReportedIncidents] = useState<UserReportedIncident[]>([]);
+
+  // Report Incident Modal State
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportType, setReportType] = useState('Poor / Broken Street Lighting');
+  const [reportSeverity, setReportSeverity] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
+  const [reportDescription, setReportDescription] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportSuccessBanner, setReportSuccessBanner] = useState<string | null>(null);
 
   const [isRerouting, setIsRerouting] = useState(false);
   const [searchQuery, setSearchQuery] = useState(destination.address);
@@ -76,6 +90,13 @@ export default function RoutesPage() {
           .finally(() => {
             if (isMounted) setIsLoadingOverpass(false);
           });
+
+        // Fetch real incidents within route buffer from Supabase
+        fetchIncidentsAlongRoute(result.routes[0].coordinates).then(incidents => {
+          if (isMounted) {
+            setReportedIncidents(incidents);
+          }
+        });
       } else {
         // Graceful fallback to static demo corridor if OSRM is unreachable
         console.log('[SafeSphere] Using cached road network fallback');
@@ -93,15 +114,67 @@ export default function RoutesPage() {
     return () => { isMounted = false; };
   }, [origin.lat, origin.lng, destination.lat, destination.lng]);
 
-  // ── When active route changes, update Overpass features ───────────────────
+  // ── When active route changes, update Overpass features & Incidents ───────
   useEffect(() => {
     const active = routes.find(r => r.id === selectedRouteId);
     if (active && active.coordinates.length > 0) {
       fetchEnvironmentalSafetyData(active.coordinates).then(summary => {
         setEnvironmentalFeatures(summary.features);
       });
+      fetchIncidentsAlongRoute(active.coordinates).then(incidents => {
+        setReportedIncidents(incidents);
+      });
     }
   }, [selectedRouteId, routes]);
+
+  // ── Handle Incident Submission ───────────────────────────────────────────
+  const handleSubmitIncidentReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reportDescription.trim()) return;
+
+    setIsSubmittingReport(true);
+    // Pin at active route mid-point or origin
+    const activeRoute = routes.find(r => r.id === selectedRouteId) || routes[0];
+    const midIndex = Math.floor(activeRoute.coordinates.length / 2);
+    const pinCoord = activeRoute.coordinates[midIndex] || [origin.lat, origin.lng];
+
+    const { data, error } = await reportIncidentToSupabase({
+      userId: user?.id,
+      lat: pinCoord[0],
+      lng: pinCoord[1],
+      type: reportType,
+      severity: reportSeverity,
+      description: reportDescription,
+      address: destination.address,
+    });
+
+    setIsSubmittingReport(false);
+
+    if (data) {
+      setReportedIncidents(prev => [data, ...prev]);
+      setReportSuccessBanner('Incident reported successfully! The community corridor map has been updated.');
+      setIsReportModalOpen(false);
+      setReportDescription('');
+      setTimeout(() => setReportSuccessBanner(null), 5000);
+    } else {
+      // Optimistic local add
+      const fallbackReport: UserReportedIncident = {
+        id: `local-inc-${Date.now()}`,
+        lat: pinCoord[0],
+        lng: pinCoord[1],
+        type: reportType,
+        severity: reportSeverity,
+        description: reportDescription,
+        address: destination.address,
+        created_at: new Date().toISOString(),
+      };
+      setReportedIncidents(prev => [fallbackReport, ...prev]);
+      setReportSuccessBanner('Incident logged locally. Thank you for keeping the corridor safe!');
+      setIsReportModalOpen(false);
+      setReportDescription('');
+      setTimeout(() => setReportSuccessBanner(null), 5000);
+    }
+  };
 
   // ── Real Nominatim Geocoding with 450ms Debounce ─────────────────────────
   useEffect(() => {
@@ -329,13 +402,36 @@ export default function RoutesPage() {
             )}
           </div>
 
+          {/* Report an Incident Action Button */}
+          <button
+            onClick={() => setIsReportModalOpen(true)}
+            style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              color: '#FCA5A5',
+              padding: '10px 14px',
+              borderRadius: 12,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              backdropFilter: 'blur(12px)',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
+            }}
+          >
+            <AlertTriangle size={14} color="#EF4444" />
+            <span>Report Incident</span>
+          </button>
+
           {/* Simulate Safety Alert (Interactive Demo Button) */}
           <button
             onClick={handleSimulateIncident}
             style={{
-              background: 'rgba(239, 68, 68, 0.2)',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              color: '#FCA5A5',
+              background: 'rgba(99, 102, 241, 0.15)',
+              border: '1px solid rgba(129, 140, 248, 0.3)',
+              color: '#c7d2fe',
               padding: '10px 14px',
               borderRadius: 12,
               fontSize: '0.78rem',
@@ -347,10 +443,33 @@ export default function RoutesPage() {
               backdropFilter: 'blur(12px)',
             }}
           >
-            <AlertTriangle size={14} />
+            <Activity size={14} />
             <span>Simulate Risk Alert</span>
           </button>
         </div>
+
+        {/* Report Success Feedback Toast */}
+        {reportSuccessBanner && (
+          <div style={{
+            position: 'absolute',
+            top: 76,
+            left: 24,
+            zIndex: 1001,
+            background: 'rgba(16, 185, 129, 0.95)',
+            color: '#FFFFFF',
+            padding: '10px 18px',
+            borderRadius: 10,
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <ShieldCheck size={16} />
+            <span>{reportSuccessBanner}</span>
+          </div>
+        )}
 
         {/* The Leaflet OpenStreetMap Container */}
         <div style={{ flex: 1, width: '100%', height: '100%' }}>
@@ -361,8 +480,174 @@ export default function RoutesPage() {
             origin={origin}
             destination={destination}
             environmentalFeatures={environmentalFeatures}
+            reportedIncidents={reportedIncidents}
           />
         </div>
+
+        {/* ── Report Incident Community Modal ── */}
+        {isReportModalOpen && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}>
+            <div style={{
+              background: '#121522',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 20,
+              padding: 28,
+              width: '100%',
+              maxWidth: 480,
+              boxShadow: '0 25px 60px rgba(0,0,0,0.8)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  background: 'rgba(239, 68, 68, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                }}>
+                  <AlertTriangle size={18} color="#EF4444" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#FFFFFF' }}>Report a Safety Incident / Hazard</h3>
+                  <p style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Your report updates the live safety score for fellow pedestrians.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmitIncidentReport} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#94A3B8', fontWeight: 600, marginBottom: 6 }}>
+                    Hazard / Incident Category
+                  </label>
+                  <select
+                    value={reportType}
+                    onChange={e => setReportType(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: '#1a1f33',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: '#FFFFFF',
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      fontSize: '0.85rem',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="Poor / Broken Street Lighting">Poor / Broken Street Lighting</option>
+                    <option value="Harassment / Unsafe Gathering">Harassment / Unsafe Gathering</option>
+                    <option value="Isolated / Blind Spot">Isolated Stretch / Blind Spot</option>
+                    <option value="Aggressive Stray Animals">Aggressive Stray Animals</option>
+                    <option value="Road Construction Obstruction">Road Construction Obstruction</option>
+                    <option value="Suspicious Activity">Suspicious Activity</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#94A3B8', fontWeight: 600, marginBottom: 6 }}>
+                    Severity Level
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                    {(['low', 'medium', 'high', 'critical'] as const).map(sev => (
+                      <button
+                        type="button"
+                        key={sev}
+                        onClick={() => setReportSeverity(sev)}
+                        style={{
+                          background: reportSeverity === sev ? (sev === 'critical' || sev === 'high' ? '#ef4444' : '#6366f1') : 'rgba(255, 255, 255, 0.05)',
+                          border: `1px solid ${reportSeverity === sev ? 'transparent' : 'rgba(255, 255, 255, 0.1)'}`,
+                          color: '#FFFFFF',
+                          padding: '8px 0',
+                          borderRadius: 8,
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {sev}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#94A3B8', fontWeight: 600, marginBottom: 6 }}>
+                    Description & Details
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Describe the hazard (e.g. 3 street lamps broken near bus stop, dark stretch)..."
+                    value={reportDescription}
+                    onChange={e => setReportDescription(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      background: '#1a1f33',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: '#FFFFFF',
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      fontSize: '0.82rem',
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                      resize: 'none',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsReportModalOpen(false)}
+                    style={{
+                      flex: 1,
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: '#94A3B8',
+                      padding: '10px 0',
+                      borderRadius: 10,
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingReport || !reportDescription.trim()}
+                    style={{
+                      flex: 1,
+                      background: '#ef4444',
+                      border: 'none',
+                      color: '#FFFFFF',
+                      padding: '10px 0',
+                      borderRadius: 10,
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      cursor: isSubmittingReport ? 'not-allowed' : 'pointer',
+                      opacity: isSubmittingReport || !reportDescription.trim() ? 0.6 : 1,
+                      boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
+                    }}
+                  >
+                    {isSubmittingReport ? 'Submitting...' : 'Submit Report'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* ── Right Floating Route Analysis Panel (Matching Reference) ── */}
         <div style={{

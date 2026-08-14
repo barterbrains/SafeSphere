@@ -27,7 +27,6 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at         TIMESTAMPTZ DEFAULT now()
 );
 
--- In case profiles table already exists, ensure new columns are added safely:
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS blood_type TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS allergies TEXT;
@@ -55,20 +54,34 @@ ALTER TABLE trusted_contacts ADD COLUMN IF NOT EXISTS permission TEXT DEFAULT 'S
 ALTER TABLE trusted_contacts ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Accepted';
 ALTER TABLE trusted_contacts ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 
--- ── 4. locations ───────────────────────────────────────
-CREATE TABLE IF NOT EXISTS locations (
-  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  latitude  NUMERIC NOT NULL,
-  longitude NUMERIC NOT NULL,
-  address   TEXT,
-  zone      TEXT
+-- ── 4. incidents (Crowd-sourced safety incident reports) ─
+CREATE TABLE IF NOT EXISTS incidents (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  lat         NUMERIC NOT NULL,
+  lng         NUMERIC NOT NULL,
+  type        TEXT NOT NULL,
+  severity    TEXT CHECK (severity IN ('low','medium','high','critical')) DEFAULT 'medium',
+  description TEXT,
+  address     TEXT,
+  active      BOOLEAN DEFAULT true,
+  created_at  TIMESTAMPTZ DEFAULT now()
 );
+
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS lat NUMERIC;
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS lng NUMERIC;
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS type TEXT;
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS severity TEXT DEFAULT 'medium';
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
+ALTER TABLE incidents ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 
 -- ── 5. routes ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS routes (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  origin_id      UUID REFERENCES locations(id),
-  destination_id UUID REFERENCES locations(id),
+  origin_id      UUID,
+  destination_id UUID,
   distance       NUMERIC,
   eta            INTERVAL,
   route_type     TEXT CHECK (route_type IN ('fastest','safest','balanced')),
@@ -103,7 +116,7 @@ CREATE TABLE IF NOT EXISTS safety_events (
 CREATE TABLE IF NOT EXISTS journeys (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id           UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  route_id          UUID REFERENCES routes(id),
+  route_id          UUID,
   route_summary     TEXT,
   origin_name       TEXT,
   destination_name  TEXT,
@@ -122,7 +135,7 @@ ALTER TABLE journeys ADD COLUMN IF NOT EXISTS duration_mins INTEGER;
 -- ── 9. sos_incidents ───────────────────────────────────
 CREATE TABLE IF NOT EXISTS sos_incidents (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  journey_id  UUID REFERENCES journeys(id),
+  journey_id  UUID,
   user_id     UUID REFERENCES profiles(id) ON DELETE CASCADE,
   type        TEXT DEFAULT 'Emergency SOS Broadcast',
   location    JSONB,
@@ -166,14 +179,15 @@ CREATE TABLE IF NOT EXISTS district_safety_scores (
 );
 
 -- ── Indexes ────────────────────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_incidents_coords ON incidents(lat, lng);
+CREATE INDEX IF NOT EXISTS idx_incidents_created ON incidents(created_at);
 CREATE INDEX IF NOT EXISTS idx_journeys_user ON journeys(user_id);
 CREATE INDEX IF NOT EXISTS idx_trusted_contacts_user ON trusted_contacts(user_id);
 CREATE INDEX IF NOT EXISTS idx_sos_incidents_user ON sos_incidents(user_id);
-CREATE INDEX IF NOT EXISTS idx_safety_events_location ON safety_events USING GIN (location);
-CREATE INDEX IF NOT EXISTS idx_institutional_incidents_institution ON institutional_incidents(institution_id);
 
 -- ── Row Level Security ─────────────────────────────────
 ALTER TABLE profiles              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE incidents             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE journeys              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trusted_contacts      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sos_incidents         ENABLE ROW LEVEL SECURITY;
@@ -185,6 +199,13 @@ ALTER TABLE institutional_incidents ENABLE ROW LEVEL SECURITY;
 -- Profiles: users can read/update/insert their own row
 DROP POLICY IF EXISTS "own profile" ON profiles;
 CREATE POLICY "own profile" ON profiles FOR ALL USING (id = auth.uid()) WITH CHECK (id = auth.uid());
+
+-- Incidents: anyone can read active incidents; authenticated users can insert reports
+DROP POLICY IF EXISTS "public read incidents" ON incidents;
+CREATE POLICY "public read incidents" ON incidents FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "auth insert incidents" ON incidents;
+CREATE POLICY "auth insert incidents" ON incidents FOR INSERT WITH CHECK (true);
 
 -- Journeys: users own their journeys
 DROP POLICY IF EXISTS "own journeys" ON journeys;
@@ -216,7 +237,6 @@ CREATE POLICY "institution scoped read" ON institutional_incidents FOR SELECT
   USING (institution_id = (SELECT institution_id FROM profiles WHERE id = auth.uid()));
 
 -- ── Auto-profile trigger ────────────────────────────────
--- Creates a profile row automatically when a new user signs up
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN

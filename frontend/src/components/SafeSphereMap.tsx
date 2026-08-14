@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-
 import L from 'leaflet';
 import type { RouteOptionData } from '../mock/delhiRouteData';
 import type { EnvironmentalSafetyFeature } from '../services/overpassEnvironmentalData';
+import type { UserReportedIncident } from '../services/incidentService';
 
 interface SafeSphereMapProps {
   routes: RouteOptionData[];
@@ -11,6 +12,7 @@ interface SafeSphereMapProps {
   origin: { lat: number; lng: number; address: string };
   destination: { lat: number; lng: number; address: string };
   environmentalFeatures?: EnvironmentalSafetyFeature[];
+  reportedIncidents?: UserReportedIncident[];
   pois?: any[];
   showSafetyZones?: boolean;
 }
@@ -42,6 +44,28 @@ const destinationIcon = L.divIcon({
   iconSize: [34, 34],
   iconAnchor: [17, 17],
 });
+
+// Incident Warning Marker Icon
+function createIncidentMarkerIcon(severity: string) {
+  const color = severity === 'critical' || severity === 'high' ? '#ef4444' : '#f59e0b';
+  return L.divIcon({
+    html: `
+      <div style="
+        width: 26px; height: 26px; border-radius: 50%;
+        background: #181119;
+        border: 2px solid ${color};
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 0 10px ${color}aa;
+        font-size: 12px;
+      ">
+        ⚠️
+      </div>
+    `,
+    className: 'incident-report-marker',
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  });
+}
 
 // Real Environmental Feature Marker Icons (Police, Street Lamps, CCTV, Hospitals)
 function createFeatureIcon(type: 'street_lamp' | 'police' | 'cctv' | 'hospital') {
@@ -170,6 +194,27 @@ export default function SafeSphereMap({
                 <div style={{ fontSize: '0.74rem', color: '#475569', marginTop: 2 }}>{feat.description}</div>
                 <div style={{ fontSize: '0.68rem', color: '#6366f1', fontWeight: 700, marginTop: 4, textTransform: 'uppercase' }}>
                   OSM Verified Entity ({feat.type.replace('_', ' ')})
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+
+        {/* Real User-Reported Incident Markers from Supabase */}
+        {(reportedIncidents || []).map((inc) => (
+          <Marker
+            key={inc.id}
+            position={[inc.lat, inc.lng]}
+            icon={createIncidentMarkerIcon(inc.severity)}
+          >
+            <Popup>
+              <div style={{ color: '#0B0D14', padding: '4px', fontFamily: 'Inter, sans-serif' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#dc2626' }}>
+                  ⚠️ Reported Hazard: {inc.type}
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#475569', marginTop: 2 }}>{inc.description}</div>
+                <div style={{ fontSize: '0.68rem', color: '#64748B', marginTop: 4 }}>
+                  Severity: <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>{inc.severity}</span> • Reported within 30 days
                 </div>
               </div>
             </Popup>
