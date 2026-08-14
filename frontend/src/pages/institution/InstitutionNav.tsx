@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { clearAuth, getUser } from '../../utils';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { clearAuth } from '../../utils';
 
 export function InstitutionNav() {
   const navigate = useNavigate();
@@ -9,6 +9,7 @@ export function InstitutionNav() {
 
   const navItems = [
     { label: 'Command Center', icon: 'dashboard', path: '/institution/overview' },
+    { label: 'Route Analysis', icon: 'alt_route', path: '/routes' },
     { label: 'Risk Analytics', icon: 'analytics', path: '/institution/analytics' },
     { label: 'Fleet Status', icon: 'local_shipping', path: '/institution/heatmap' },
     { label: 'Safety Audits', icon: 'verified_user', path: '/institution/incidents' },
@@ -30,7 +31,7 @@ export function InstitutionNav() {
 
       <div className="flex-1 flex flex-col gap-1.5 overflow-y-auto px-3">
         {navItems.map((item) => {
-          const isActive = currentPath === item.path;
+          const isActive = currentPath === item.path || (item.path === '/routes' && (currentPath === '/routes' || currentPath === '/home'));
           return (
             <button
               key={item.path}

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, MapPin, AlertTriangle, ShieldCheck, Activity, Users, ArrowLeft } from 'lucide-react';
 import SafeSphereMap from '../components/SafeSphereMap';
-import { SafeSphereSidebar, RouteAnalysisPanel } from '../components/RouteAnalysisPanel';
+import { RouteAnalysisPanel } from '../components/RouteAnalysisPanel';
+import { InstitutionNav } from './institution/InstitutionNav';
 import { DELHI_DEMO_ROUTES, DELHI_SAFETY_POIS } from '../mock/delhiRouteData';
 import type { RouteOptionData } from '../mock/delhiRouteData';
 import { apiFetch } from '../utils';
@@ -117,9 +118,7 @@ export default function RoutesPage() {
       position: 'relative',
     }}>
       {/* ── Left Fixed Sidebar (Desktop) ── */}
-      <div className="routes-sidebar-wrapper">
-        <SafeSphereSidebar onTriggerEmergency={() => navigate('/emergency')} />
-      </div>
+      <InstitutionNav />
 
       {/* ── Center / Main Map Space ── */}
       <div style={{
