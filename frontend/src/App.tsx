@@ -21,6 +21,9 @@ import InstitutionAnalyticsPage from './pages/institution/InstitutionAnalyticsPa
 import InstitutionAlertsPage from './pages/institution/InstitutionAlertsPage';
 import InstitutionProfilePage from './pages/institution/InstitutionProfilePage';
 import InstitutionSettingsPage from './pages/institution/InstitutionSettingsPage';
+import OrganisationLoginPage from './pages/organisation/OrganisationLoginPage';
+import OrganisationRegisterPage from './pages/organisation/OrganisationRegisterPage';
+import OrganisationDashboardPage from './pages/organisation/OrganisationDashboardPage';
 
 // ── Route Guards ───────────────────────────────────────────────────────────
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -96,6 +99,13 @@ function AppRoutes() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/institution/login" element={<InstitutionLoginPage />} />
         <Route path="/institution/register" element={<InstitutionRegisterPage />} />
+
+        {/* Organisation flow */}
+        <Route path="/organisation/login" element={<OrganisationLoginPage />} />
+        <Route path="/organisation/register" element={<OrganisationRegisterPage />} />
+        <Route path="/organisation/dashboard" element={<InstitutionRoute><OrganisationDashboardPage /></InstitutionRoute>} />
+        <Route path="/organisation/overview" element={<Navigate to="/organisation/dashboard" replace />} />
+        <Route path="/organisation" element={<Navigate to="/organisation/dashboard" replace />} />
 
         {/* Onboarding Flow for new users */}
         <Route path="/onboarding" element={<OnboardingRoute><OnboardingPage /></OnboardingRoute>} />
