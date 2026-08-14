@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ShieldCheck, Building2 } from 'lucide-react';
 import { apiFetch, setAuth } from '../utils';
 
 // Brand Shield Badge Component
@@ -24,8 +24,9 @@ function SafeSphereShieldLogo({ size = 44 }: { size?: number }) {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('agent@institution.edu');
-  const [password, setPassword] = useState('password123');
+  // Clear prefilled values so users see clean placeholders
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -33,23 +34,22 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter your email and password.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
       const data = await apiFetch('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password: password.trim() }),
       });
       setAuth(data.token, data.user);
       navigate(data.user.role === 'institution' ? '/institution/overview' : '/home');
-    } catch {
-      localStorage.setItem('safesphere_token', 'demo-token-xyz');
-      localStorage.setItem('safesphere_user', JSON.stringify({
-        id: 'demo-user-123',
-        name: 'Command Agent',
-        role: 'consumer',
-      }));
-      navigate('/home');
+    } catch (err: any) {
+      setError(err?.message || 'Invalid credentials. Please check your email and password or use Demo.');
     } finally {
       setLoading(false);
     }
@@ -110,7 +110,7 @@ export default function LoginPage() {
         />
 
         <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: 32, maxWidth: 520 }}>
-          {/* Pulsing Shield Emblem in New Indigo */}
+          {/* Pulsing Shield Emblem in Rich Indigo */}
           <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 76, height: 76 }}>
             <div
               style={{
@@ -164,10 +164,10 @@ export default function LoginPage() {
               WebkitBackdropFilter: 'blur(24px)',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               borderRadius: 28,
-              padding: '40px 36px',
+              padding: '36px 32px',
               display: 'flex',
               flexDirection: 'column',
-              gap: 28,
+              gap: 24,
               position: 'relative',
               overflow: 'hidden',
               boxShadow: '0 24px 50px -12px rgba(0, 0, 0, 0.6), 0 0 40px rgba(79, 70, 229, 0.08), inset 0 1px 0 rgba(255,255,255,0.1)',
@@ -185,19 +185,19 @@ export default function LoginPage() {
             }} />
 
             <div>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#FFFFFF', marginBottom: 4, letterSpacing: '-0.02em' }}>
+              <h2 style={{ fontSize: '1.55rem', fontWeight: 800, color: '#FFFFFF', marginBottom: 4, letterSpacing: '-0.02em' }}>
                 Welcome Back
               </h2>
-              <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0 }}>
-                Please authenticate to continue.
+              <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>
+                Please authenticate to access your SafeSphere account.
               </p>
             </div>
 
             {/* Form Section */}
-            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               
               {/* Email Input */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label htmlFor="email" style={{ fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8', letterSpacing: '0.04em' }}>
                   Email Address
                 </label>
@@ -211,10 +211,10 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="agent@institution.edu"
+                    placeholder="name@domain.com"
                     style={{
                       width: '100%',
-                      height: 52,
+                      height: 50,
                       borderRadius: 12,
                       padding: '0 16px 0 46px',
                       background: 'rgba(13, 13, 26, 0.8)',
@@ -241,9 +241,9 @@ export default function LoginPage() {
               </div>
 
               {/* Password Input */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label htmlFor="password" style={{ fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8', letterSpacing: '0.04em' }}>
-                  Security Clearance
+                  Password
                 </label>
                 <div style={{ position: 'relative' }}>
                   <div style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#64748b', display: 'flex' }}>
@@ -258,7 +258,7 @@ export default function LoginPage() {
                     placeholder="••••••••"
                     style={{
                       width: '100%',
-                      height: 52,
+                      height: 50,
                       borderRadius: 12,
                       padding: '0 46px 0 46px',
                       background: 'rgba(13, 13, 26, 0.8)',
@@ -320,7 +320,7 @@ export default function LoginPage() {
                   <span>Remember device</span>
                 </label>
                 <Link to="#" style={{ color: '#818cf8', textDecoration: 'none', transition: 'color 0.15s' }}>
-                  Recover Access
+                  Forgot password?
                 </Link>
               </div>
 
@@ -337,14 +337,14 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* Actions: Indigo Gradient Button */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 6 }}>
+              {/* Actions: Sign In Button + Try Demo Account */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
                 <button
                   type="submit"
                   disabled={loading}
                   style={{
                     width: '100%',
-                    height: 52,
+                    height: 50,
                     borderRadius: 12,
                     border: '1px solid rgba(129, 140, 248, 0.35)',
                     fontWeight: 700,
@@ -372,7 +372,7 @@ export default function LoginPage() {
                     e.currentTarget.style.background = 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)';
                   }}
                 >
-                  <span>{loading ? 'Authenticating...' : 'Initialize Access'}</span>
+                  <span>{loading ? 'Signing in...' : 'Sign In'}</span>
                   <ArrowRight size={18} />
                 </button>
 
@@ -381,11 +381,11 @@ export default function LoginPage() {
                   onClick={handleDemoLogin}
                   style={{
                     width: '100%',
-                    height: 52,
+                    height: 48,
                     borderRadius: 12,
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     fontWeight: 600,
-                    fontSize: '0.92rem',
+                    fontSize: '0.9rem',
                     color: '#cbd5e1',
                     background: 'rgba(255, 255, 255, 0.03)',
                     display: 'flex',
@@ -410,13 +410,57 @@ export default function LoginPage() {
                   <span>Try Demo Account</span>
                 </button>
               </div>
+
+              {/* Dedicated Institutional Login Button in Card */}
+              <div style={{
+                marginTop: 6,
+                paddingTop: 16,
+                borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}>
+                <button
+                  type="button"
+                  onClick={() => navigate('/institution/login')}
+                  style={{
+                    width: '100%',
+                    height: 46,
+                    borderRadius: 12,
+                    border: '1px solid rgba(129, 140, 248, 0.25)',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    color: '#a5b4fc',
+                    background: 'rgba(79, 70, 229, 0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(79, 70, 229, 0.16)';
+                    e.currentTarget.style.borderColor = 'rgba(129, 140, 248, 0.5)';
+                    e.currentTarget.style.color = '#ffffff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(79, 70, 229, 0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(129, 140, 248, 0.25)';
+                    e.currentTarget.style.color = '#a5b4fc';
+                  }}
+                >
+                  <Building2 size={16} />
+                  <span>Institutional Command Login</span>
+                </button>
+              </div>
             </form>
           </div>
 
-          <div style={{ marginTop: 24, textAlign: 'center', fontSize: '0.78rem', color: '#94a3b8' }}>
-            <span>Institutional Access Only. </span>
-            <Link to="/institution/overview" style={{ color: '#818cf8', textDecoration: 'none', fontWeight: 600 }}>
-              Request Credentials ↗
+          <div style={{ marginTop: 20, textAlign: 'center', fontSize: '0.82rem', color: '#94a3b8' }}>
+            <span>Don't have an account? </span>
+            <Link to="/register" style={{ color: '#818cf8', textDecoration: 'none', fontWeight: 600 }}>
+              Create Account
             </Link>
           </div>
 
