@@ -8,28 +8,30 @@ export default function InstitutionProfilePage() {
   const { user, profile: authProfile, signOut, isDemo } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'settings'>('profile');
 
-  // User Profile States
+  // ── Profile state: demo gets pre-filled data, real users start empty ──────
   const [profile, setProfile] = useState({
-    name: authProfile?.name || (isDemo ? 'Aarav Sharma' : user?.email?.split('@')[0] || 'User'),
-    email: user?.email || (isDemo ? 'aarav.sharma@example.com' : ''),
-    phone: '+91 98101 23456',
-    bloodType: 'O+ Positive',
-    allergies: 'Penicillin, Peanuts',
-    medicalConditions: 'Asthma (Carries Inhaler)',
-    homeAddress: 'C-42, Hauz Khas Enclave, New Delhi',
-    workSafeZone: 'Barakhamba Road, Connaught Place, New Delhi',
-    collegeSafeZone: 'GTBIT Campus, Rajouri Garden, New Delhi',
-    memberTier: 'SafeSphere Pro Guardian',
-    verifiedPhone: true,
-    verifiedEmail: true,
+    name:             isDemo ? 'Aarav Sharma'                        : (authProfile?.name || ''),
+    email:            isDemo ? 'aarav.sharma@example.com'            : (user?.email || ''),
+    phone:            isDemo ? '+91 98101 23456'                     : '',
+    bloodType:        isDemo ? 'O+ Positive'                         : '',
+    allergies:        isDemo ? 'Penicillin, Peanuts'                 : '',
+    medicalConditions:isDemo ? 'Asthma (Carries Inhaler)'            : '',
+    homeAddress:      isDemo ? 'C-42, Hauz Khas Enclave, New Delhi'  : '',
+    workSafeZone:     isDemo ? 'Barakhamba Road, Connaught Place, New Delhi' : '',
+    collegeSafeZone:  isDemo ? 'GTBIT Campus, Rajouri Garden, New Delhi'     : '',
+    memberTier:       isDemo ? 'SafeSphere Pro Guardian'             : 'SafeSphere Free',
+    verifiedPhone:    isDemo,
+    verifiedEmail:    isDemo,
   });
 
-  // Trusted Contacts Management State
-  const [contacts, setContacts] = useState([
-    { id: 'c-1', name: 'Rohan Sharma', phone: '+91 98111 88990', relationship: 'Brother', permission: 'Always (24/7 Live)', status: 'Accepted' },
-    { id: 'c-2', name: 'Dr. Meera Sharma', phone: '+91 98200 11223', relationship: 'Mother', permission: 'SOS Only', status: 'Accepted' },
-    { id: 'c-3', name: 'Ananya Verma', phone: '+91 97170 33445', relationship: 'Roommate', permission: 'Active Journeys Only', status: 'Pending' },
-  ]);
+  // ── Trusted contacts: demo gets sample contacts, real users start empty ───
+  const [contacts, setContacts] = useState(
+    isDemo ? [
+      { id: 'c-1', name: 'Rohan Sharma',   phone: '+91 98111 88990', relationship: 'Brother',  permission: 'Always (24/7 Live)',      status: 'Accepted' },
+      { id: 'c-2', name: 'Dr. Meera Sharma', phone: '+91 98200 11223', relationship: 'Mother', permission: 'SOS Only',               status: 'Accepted' },
+      { id: 'c-3', name: 'Ananya Verma',   phone: '+91 97170 33445', relationship: 'Roommate', permission: 'Active Journeys Only',   status: 'Pending'  },
+    ] : []
+  );
 
   const [newContactName, setNewContactName] = useState('');
   const [newContactPhone, setNewContactPhone] = useState('');
@@ -37,20 +39,19 @@ export default function InstitutionProfilePage() {
   const [newContactPerm, setNewContactPerm] = useState('SOS Only');
   const [showAddContact, setShowAddContact] = useState(false);
 
-  // Past Journeys Activity Log
-  const pastJourneys = [
-    { id: 'j-1', route: 'Connaught Place ➔ Hauz Khas', date: 'Today, 2:15 PM', safeScore: 94, duration: '28 mins', status: 'Completed Safely' },
-    { id: 'j-2', route: 'Rajouri Garden ➔ India Gate', date: 'Yesterday, 8:40 PM', safeScore: 88, duration: '34 mins', status: 'Completed Safely' },
-    { id: 'j-3', route: 'Saket CityWalk ➔ Hauz Khas', date: '12 Aug, 10:10 PM', safeScore: 82, duration: '18 mins', status: 'Rerouted (Low Lighting)' },
-  ];
+  // ── Journey & alert history: demo gets sample data, real users see empty ──
+  const pastJourneys = isDemo ? [
+    { id: 'j-1', route: 'Connaught Place ➔ Hauz Khas',   date: 'Today, 2:15 PM',      safeScore: 94, duration: '28 mins', status: 'Completed Safely'          },
+    { id: 'j-2', route: 'Rajouri Garden ➔ India Gate',    date: 'Yesterday, 8:40 PM',  safeScore: 88, duration: '34 mins', status: 'Completed Safely'          },
+    { id: 'j-3', route: 'Saket CityWalk ➔ Hauz Khas',    date: '12 Aug, 10:10 PM',    safeScore: 82, duration: '18 mins', status: 'Rerouted (Low Lighting)'   },
+  ] : [];
 
-  // Past SOS History
-  const alertHistory = [
-    { id: 'sos-1', type: 'Off-Route Alert Triggered', date: '04 Aug, 11:20 PM', location: 'Near Ring Road Flyover', resolvedBy: 'User Check-in (Safe)', status: 'Resolved' },
-    { id: 'sos-2', type: 'Test SOS Broadcast', date: '15 Jul, 04:00 PM', location: 'GTBIT Campus', resolvedBy: 'System Diagnostic Test', status: 'Passed' },
-  ];
+  const alertHistory = isDemo ? [
+    { id: 'sos-1', type: 'Off-Route Alert Triggered', date: '04 Aug, 11:20 PM', location: 'Near Ring Road Flyover', resolvedBy: 'User Check-in (Safe)',   status: 'Resolved' },
+    { id: 'sos-2', type: 'Test SOS Broadcast',        date: '15 Jul, 04:00 PM', location: 'GTBIT Campus',          resolvedBy: 'System Diagnostic Test', status: 'Passed'   },
+  ] : [];
 
-  // Settings Section States
+  // ── Settings: sensible defaults for all users ─────────────────────────────
   const [autoSosMinutes, setAutoSosMinutes] = useState('5');
   const [autoSosSafeScoreDrop, setAutoSosSafeScoreDrop] = useState(true);
   const [safeScoreThreshold, setSafeScoreThreshold] = useState('60');
@@ -63,14 +64,14 @@ export default function InstitutionProfilePage() {
   const [whoCanSeeHistory, setWhoCanSeeHistory] = useState('Only Me');
   const [dataRetentionPeriod, setDataRetentionPeriod] = useState('30 Days (Auto-Purge)');
 
-  // Notification Preferences
+  // Notifications
   const [notifySosPush, setNotifySosPush] = useState(true);
   const [notifySosSms, setNotifySosSms] = useState(true);
   const [notifyCheckInReminders, setNotifyCheckInReminders] = useState(true);
   const [notifySafeScoreDrop, setNotifySafeScoreDrop] = useState(true);
 
-  // App & Security
-  const [twoFactorAuth, setTwoFactorAuth] = useState(true);
+  // Security & App
+  const [twoFactorAuth, setTwoFactorAuth] = useState(false);
   const [appUnits, setAppUnits] = useState('Kilometers (km)');
   const [appLanguage, setAppLanguage] = useState('English (India)');
 
@@ -317,32 +318,48 @@ export default function InstitutionProfilePage() {
 
                 {/* Contacts List */}
                 <div className="flex flex-col gap-3">
-                  {contacts.map(c => (
-                    <div key={c.id} className="p-3.5 rounded-xl bg-black/30 border border-white/5 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-900/40 border border-indigo-500/30 flex items-center justify-center font-bold text-indigo-300 text-sm">
-                          {c.name[0]}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-white">{c.name}</span>
-                            <span className="text-[11px] text-slate-400">({c.relationship})</span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${c.status === 'Accepted' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                              {c.status}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-400 mt-0.5">{c.phone} · Permission: <span className="text-indigo-300 font-semibold">{c.permission}</span></p>
-                        </div>
+                  {contacts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center gap-3 border border-dashed border-white/10 rounded-xl">
+                      <span className="material-symbols-outlined text-3xl text-slate-600">group_add</span>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-400">No trusted contacts yet</p>
+                        <p className="text-xs text-slate-600 mt-1">Add people who will receive your live location and SOS alerts.</p>
                       </div>
                       <button
-                        onClick={() => handleRemoveContact(c.id)}
-                        className="text-slate-500 hover:text-red-400 p-2 transition-colors cursor-pointer border-none bg-transparent"
-                        title="Remove Contact"
+                        onClick={() => setShowAddContact(true)}
+                        className="text-xs font-bold text-indigo-400 hover:text-indigo-300 border-none bg-transparent cursor-pointer underline underline-offset-2"
                       >
-                        <span className="material-symbols-outlined text-lg">delete</span>
+                        Add your first guardian →
                       </button>
                     </div>
-                  ))}
+                  ) : (
+                    contacts.map(c => (
+                      <div key={c.id} className="p-3.5 rounded-xl bg-black/30 border border-white/5 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-indigo-900/40 border border-indigo-500/30 flex items-center justify-center font-bold text-indigo-300 text-sm">
+                            {c.name[0]}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-white">{c.name}</span>
+                              <span className="text-[11px] text-slate-400">({c.relationship})</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${c.status === 'Accepted' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                                {c.status}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-400 mt-0.5">{c.phone} · Permission: <span className="text-indigo-300 font-semibold">{c.permission}</span></p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveContact(c.id)}
+                          className="text-slate-500 hover:text-red-400 p-2 transition-colors cursor-pointer border-none bg-transparent"
+                          title="Remove Contact"
+                        >
+                          <span className="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -356,7 +373,12 @@ export default function InstitutionProfilePage() {
                     Recent Protected Journeys
                   </h4>
                   <div className="flex flex-col gap-2.5">
-                    {pastJourneys.map(j => (
+                    {pastJourneys.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-6 text-center gap-2 border border-dashed border-white/10 rounded-xl">
+                        <span className="material-symbols-outlined text-2xl text-slate-600">route</span>
+                        <p className="text-xs text-slate-500">No journeys recorded yet.<br />Your protected trips will appear here.</p>
+                      </div>
+                    ) : pastJourneys.map(j => (
                       <div key={j.id} className="p-3 bg-black/30 border border-white/5 rounded-xl flex justify-between items-center text-xs">
                         <div>
                           <p className="font-semibold text-white">{j.route}</p>
@@ -378,7 +400,12 @@ export default function InstitutionProfilePage() {
                     Alert &amp; SOS Event History
                   </h4>
                   <div className="flex flex-col gap-2.5">
-                    {alertHistory.map(a => (
+                    {alertHistory.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-6 text-center gap-2 border border-dashed border-white/10 rounded-xl">
+                        <span className="material-symbols-outlined text-2xl text-slate-600">notifications_off</span>
+                        <p className="text-xs text-slate-500">No alerts triggered.<br />Stay safe — your history will appear here.</p>
+                      </div>
+                    ) : alertHistory.map(a => (
                       <div key={a.id} className="p-3 bg-black/30 border border-white/5 rounded-xl flex justify-between items-center text-xs">
                         <div>
                           <p className="font-semibold text-red-300">{a.type}</p>
