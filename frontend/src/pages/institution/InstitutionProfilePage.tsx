@@ -11,14 +11,14 @@ export default function InstitutionProfilePage() {
   const profileData = {
     name: user?.name || 'Commander Alex Vance',
     role: 'Chief Security Officer (CSO)',
-    organization: 'SafeSphere Global Operations & Fleet Command',
-    institutionId: 'INST-NY-84920',
-    email: user?.email || 'vance.command@safesphere.org',
+    organization: 'SafeSphere NCR Operations & Delhi Command Desk',
+    institutionId: 'INST-DL-84920',
+    email: user?.email || 'delhi.command@safesphere.org',
     clearanceLevel: 'LEVEL 5 — STRATEGIC DISPATCH',
-    station: 'Central Command Bunker (Zone 1)',
+    station: 'Delhi NCR Command Hub (Connaught Place)',
     activeGuardians: '148 Active Personnel',
     monitoredUnits: '1,240 Verified Nodes',
-    lastAudit: 'Today at 06:00 UTC (Passed 100%)',
+    lastAudit: 'Today at 06:00 IST (Passed 100%)',
     encryption: 'AES-256-GCM End-to-End Quantum-Resistant',
   };
 

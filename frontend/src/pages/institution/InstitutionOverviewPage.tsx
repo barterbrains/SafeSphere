@@ -213,7 +213,7 @@ export default function InstitutionOverviewPage() {
               <div className="w-full h-full rounded-xl overflow-hidden relative bg-[#0a0a12]">
                 <CommandMap
                   markers={mapMarkers}
-                  center={[41.8781, -87.6298]}
+                  center={[28.6139, 77.2090]}
                   zoom={zoomLevel}
                   showHeatmap={true}
                 />

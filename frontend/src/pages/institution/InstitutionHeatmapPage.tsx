@@ -53,7 +53,7 @@ export default function InstitutionHeatmapPage() {
           <div className="w-full h-full rounded-xl overflow-hidden relative bg-[#0a0a12]">
             <CommandMap
               markers={DEMO_MAP_MARKERS}
-              center={[41.8781, -87.6298]}
+              center={[28.6139, 77.2090]}
               zoom={zoomLevel}
               showHeatmap={true}
             />

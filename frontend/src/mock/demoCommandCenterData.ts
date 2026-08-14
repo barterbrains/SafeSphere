@@ -1,4 +1,4 @@
-// Dedicated seed/mock data for Command Center Demo Mode
+// Dedicated seed/mock data for Command Center Demo Mode (New Delhi NCR)
 
 export interface DemoIncident {
   id: string;
@@ -21,21 +21,21 @@ export interface DemoMarker {
 }
 
 export const DEMO_METRICS = {
-  totalJourneys: 12482,
-  totalJourneysTrend: '+4.2%',
-  avgSafeScore: 94,
+  totalJourneys: 14280,
+  totalJourneysTrend: '+6.4%',
+  avgSafeScore: 92,
   activeAlerts: 3,
   activeAlertsPriority: 'High Priority',
-  highRiskZones: 14,
-  highRiskZonesTrend: '-2 from yesterday',
+  highRiskZones: 8,
+  highRiskZonesTrend: '-3 from yesterday',
 };
 
 export const DEMO_SAFESCORE_TRENDS = [
-  { day: 'Mon', score: 70 },
-  { day: 'Tue', score: 76 },
+  { day: 'Mon', score: 72 },
+  { day: 'Tue', score: 78 },
   { day: 'Wed', score: 82 },
-  { day: 'Thu', score: 79 },
-  { day: 'Fri', score: 88 },
+  { day: 'Thu', score: 85 },
+  { day: 'Fri', score: 89 },
   { day: 'Sat', score: 91 },
   { day: 'Sun', score: 94, current: true },
 ];
@@ -43,62 +43,62 @@ export const DEMO_SAFESCORE_TRENDS = [
 export const DEMO_INCIDENTS: DemoIncident[] = [
   {
     id: '#INC-4029',
-    location: 'Sector 7G, West District',
+    location: 'Rajouri Garden Ring Road, West Delhi',
     type: 'Route Deviation',
     severity: 'HIGH',
     time: '2 mins ago',
-    lat: 41.8850,
-    lng: -87.6400,
+    lat: 28.6473,
+    lng: 77.1221,
   },
   {
     id: '#INC-4028',
-    location: 'North Station Transit',
+    location: 'Rajiv Chowk Metro Gate 4, Connaught Place',
     type: 'Proximity Alert',
     severity: 'MEDIUM',
     time: '14 mins ago',
-    lat: 41.8980,
-    lng: -87.6250,
+    lat: 28.6328,
+    lng: 77.2195,
   },
   {
     id: '#INC-4027',
-    location: 'Downtown Core',
+    location: 'Kasturba Gandhi Marg Corridor, New Delhi',
     type: 'Signal Lost',
     severity: 'LOW',
     time: '1 hr ago',
-    lat: 41.8781,
-    lng: -87.6298,
+    lat: 28.6220,
+    lng: 77.2240,
   },
   {
     id: '#INC-4026',
-    location: 'River North Corridor',
+    location: 'India Gate C-Hexagon Outer Circle',
     type: 'Lighting Anomaly',
     severity: 'LOW',
     time: '2 hrs ago',
-    lat: 41.8924,
-    lng: -87.6340,
+    lat: 28.6129,
+    lng: 77.2295,
   },
   {
     id: '#INC-4025',
-    location: 'South Loop Intersection',
+    location: 'Saket District Centre, South Delhi',
     type: 'Crowd Hazard',
     severity: 'MEDIUM',
     time: '3 hrs ago',
-    lat: 41.8680,
-    lng: -87.6240,
+    lat: 28.5283,
+    lng: 77.2185,
   },
 ];
 
 export const DEMO_MAP_MARKERS: DemoMarker[] = [
-  { id: 'm-1', lat: 41.8850, lng: -87.6400, type: 'incident', title: 'Route Deviation', status: 'Active investigation', severity: 'HIGH' },
-  { id: 'm-2', lat: 41.8980, lng: -87.6250, type: 'incident', title: 'Proximity Alert', status: 'Warning broadcasted', severity: 'MEDIUM' },
-  { id: 'm-3', lat: 41.8781, lng: -87.6298, type: 'incident', title: 'Signal Lost', status: 'Resolving', severity: 'LOW' },
-  { id: 'm-4', lat: 41.8902, lng: -87.6189, type: 'safe_haven', title: 'Navy Pier Safety Point', status: '24/7 Monitored' },
-  { id: 'm-5', lat: 41.8663, lng: -87.6170, type: 'safe_haven', title: 'Museum Campus Kiosk', status: 'Active personnel' },
-  { id: 'm-6', lat: 41.8827, lng: -87.6233, type: 'police', title: 'Millennium Park Station', status: 'Patrol on duty' },
-  { id: 'm-7', lat: 41.8756, lng: -87.6500, type: 'high_risk', title: 'West Loop Construction Zone', status: 'Low illumination' },
-  { id: 'm-8', lat: 41.9050, lng: -87.6420, type: 'patrol', title: 'Mobile Unit Alpha-4', status: 'En route' },
-  { id: 'm-9', lat: 41.8590, lng: -87.6320, type: 'safe_haven', title: 'Chinatown Central Hub', status: 'Active surveillance' },
-  { id: 'm-10', lat: 41.8940, lng: -87.6120, type: 'patrol', title: 'Harbor Patrol Unit', status: 'On standby' },
-  { id: 'm-11', lat: 41.8710, lng: -87.6380, type: 'high_risk', title: 'Financial Corridor Alley', status: 'Signal degradation' },
-  { id: 'm-12', lat: 41.8890, lng: -87.6520, type: 'safe_haven', title: 'Fulton Market Post', status: 'Guard stationed' },
+  { id: 'm-1', lat: 28.6473, lng: 77.1221, type: 'incident', title: 'Route Deviation Alert', status: 'Active investigation', severity: 'HIGH' },
+  { id: 'm-2', lat: 28.6328, lng: 77.2195, type: 'incident', title: 'Proximity Hazard', status: 'Warning broadcasted', severity: 'MEDIUM' },
+  { id: 'm-3', lat: 28.6220, lng: 77.2240, type: 'incident', title: 'Telemetry Signal Dropout', status: 'Resolving', severity: 'LOW' },
+  { id: 'm-4', lat: 28.6129, lng: 77.2295, type: 'safe_haven', title: 'India Gate 24/7 Security Booth', status: 'Delhi Police Monitored' },
+  { id: 'm-5', lat: 28.6315, lng: 77.2167, type: 'safe_haven', title: 'Connaught Place Central Hub', status: 'Active personnel & CCTV' },
+  { id: 'm-6', lat: 28.6275, lng: 77.2155, type: 'police', title: 'Parliament Street Police Station', status: 'PCR Vans on Patrol' },
+  { id: 'm-7', lat: 28.6410, lng: 77.1410, type: 'high_risk', title: 'Subhash Nagar Unlit Cut-through', status: 'Low illumination' },
+  { id: 'm-8', lat: 28.6350, lng: 77.2250, type: 'patrol', title: 'Delhi Police PCR Van Victor-9', status: 'Patrolling' },
+  { id: 'm-9', lat: 28.5283, lng: 77.2185, type: 'safe_haven', title: 'Saket Select CityWalk Safe Haven', status: '24/7 Monitored' },
+  { id: 'm-10', lat: 28.6190, lng: 77.2340, type: 'patrol', title: 'Central Vista Quick Response Team', status: 'On standby' },
+  { id: 'm-11', lat: 28.6510, lng: 77.1180, type: 'high_risk', title: 'Tagore Garden Service Lane', status: 'Reduced footfall' },
+  { id: 'm-12', lat: 28.6010, lng: 77.2260, type: 'safe_haven', title: 'Khan Market Assistance Desk', status: 'Guard stationed' },
 ];
