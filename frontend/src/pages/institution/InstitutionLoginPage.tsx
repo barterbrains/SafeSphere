@@ -148,7 +148,7 @@ export default function InstitutionLoginPage() {
             <Shield className="w-8 h-8 text-[#c0c1ff]" />
           </div>
           <h1 className="text-[28px] font-bold tracking-tight text-white">SafeSphere</h1>
-          <p className="text-[11px] font-bold text-[#c3c6d6] tracking-widest uppercase">Institutional Command</p>
+          <p className="text-[11px] font-bold text-[#c3c6d6] tracking-widest uppercase">Organisation Command</p>
         </div>
 
         {/* Glassmorphism Card */}
@@ -167,7 +167,7 @@ export default function InstitutionLoginPage() {
             <div className="flex flex-col gap-5 animate-in fade-in duration-300">
               <div className="flex justify-between items-start mb-1">
                 <div>
-                  <h2 className="text-[19px] font-bold text-white mb-0.5">Institutional Access</h2>
+                  <h2 className="text-[19px] font-bold text-white mb-0.5">Organisation Access</h2>
                   <p className="text-[13px] text-[#94a3b8]">Sign in with your verified organizational credentials</p>
                 </div>
                 <div className="bg-[#3131c0]/30 text-[#b0b2ff] px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap border border-[#818cf8]/30">
@@ -228,7 +228,7 @@ export default function InstitutionLoginPage() {
                   </div>
                   <p className="text-[11px] text-[#94a3b8] mt-1 flex items-center gap-1.5">
                     <Shield className="w-3.5 h-3.5 text-indigo-400" />
-                    Two-factor authentication required for all institutional accounts
+                    Two-factor authentication required for all organisation accounts
                   </p>
                 </div>
 
@@ -259,7 +259,7 @@ export default function InstitutionLoginPage() {
                     <div className="h-[1px] flex-1 bg-white/10" />
                   </div>
 
-                  {/* Instant Institutional Demo Login Button */}
+                  {/* Instant Organisation Demo Login Button */}
                   <button
                     type="button"
                     onClick={handleInstantDemoLogin}
@@ -267,7 +267,7 @@ export default function InstitutionLoginPage() {
                     className="w-full bg-white/[0.04] hover:bg-indigo-600/20 border border-white/15 hover:border-indigo-500/50 text-white font-bold text-[13px] py-3.5 rounded-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-sm group"
                   >
                     <ShieldCheck size={18} className="text-indigo-400 group-hover:scale-110 transition-transform" />
-                    <span>Try Institutional Demo Account</span>
+                    <span>Try Organisation Demo Account</span>
                     <Sparkles size={14} className="text-amber-400" />
                   </button>
                 </div>
@@ -390,7 +390,7 @@ export default function InstitutionLoginPage() {
         {/* Footer */}
         <footer className="text-center flex flex-col gap-2 px-4">
           <p className="text-[11px] text-[#64748b] max-w-sm mx-auto leading-relaxed">
-            Institutional accounts are subject to mandatory two-factor authentication and session monitoring for security compliance.
+            Organisation accounts are subject to mandatory two-factor authentication and session monitoring for security compliance.
           </p>
           <div className="flex justify-center gap-3 mt-1 text-[11px] text-[#94a3b8]">
             <Link to="/#about" className="hover:text-white transition-colors">Privacy Policy</Link>

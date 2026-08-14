@@ -325,21 +325,6 @@ export default function LandingPage() {
             <Users size={14} />
             Log In
           </button>
-          <button
-            onClick={() => navigate('/institution/login')}
-            style={{
-              background: 'rgba(99,102,241,0.08)',
-              border: '1px solid rgba(129,140,248,0.3)',
-              borderRadius: 999, padding: '8px 16px',
-              color: '#a5b4fc', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.18)'; e.currentTarget.style.color = '#ffffff'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; e.currentTarget.style.color = '#a5b4fc'; }}
-          >
-            <Building2 size={14} />
-            Institutional Login
-          </button>
           <button onClick={handleDemoLogin} style={{
             background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
             border: '1px solid rgba(129, 140, 248, 0.35)',
@@ -402,21 +387,6 @@ export default function LandingPage() {
                 onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
               >
                 Try Demo
-              </button>
-              <button
-                onClick={() => navigate('/institution/login')}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid rgba(129,140,248,0.35)',
-                  borderRadius: 999, padding: '13px 22px',
-                  color: '#a5b4fc', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit',
-                  display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.15s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.12)'; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#a5b4fc'; e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                <Building2 size={16} />
-                Institutional Login
               </button>
             </div>
             <div style={{

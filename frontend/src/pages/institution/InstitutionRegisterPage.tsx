@@ -137,7 +137,7 @@ export default function InstitutionRegisterPage() {
           <span className="text-[18px] font-bold tracking-tight text-white">SafeSphere</span>
         </div>
         <div className="flex items-center gap-2 text-[#94a3b8] text-[12px] font-semibold tracking-wider uppercase">
-          <span>Institutional Command Setup</span>
+          <span>Organisation Command Setup</span>
           <span className="text-white/20">/</span>
           <span className="text-indigo-400 font-bold">
             {step === 4 ? 'Complete' : `Step ${step} of 3`}
@@ -161,7 +161,7 @@ export default function InstitutionRegisterPage() {
           <div className="mb-8">
             <div className="text-center mb-6">
               <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-1">
-                Institutional Registration
+                Organisation Registration
               </h1>
               <p className="text-sm text-[#94a3b8]">
                 Configure your organizational safety &amp; emergency dispatch command center.
@@ -580,7 +580,7 @@ export default function InstitutionRegisterPage() {
               Application Under Review
             </h2>
             <p className="text-sm text-[#94a3b8] max-w-md mb-6 leading-relaxed">
-              Your institution's credentials and accreditation documents have been securely transmitted to our enterprise verification team.
+              Your organisation's credentials and accreditation documents have been securely transmitted to our enterprise verification team.
             </p>
 
             <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 max-w-md text-left flex items-start gap-4 mb-8">
@@ -598,7 +598,7 @@ export default function InstitutionRegisterPage() {
                 onClick={() => navigate('/institution/login')}
                 className="flex-1 bg-gradient-to-r from-[#3131c0] to-[#1000a9] hover:from-[#4338ca] hover:to-[#3131c0] text-white font-bold text-xs py-3 px-6 rounded-xl transition-all shadow-lg border border-[#818cf8]/30 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Return to Institutional Login</span>
+                <span>Return to Organisation Login</span>
                 <ArrowRight size={14} />
               </button>
               <button

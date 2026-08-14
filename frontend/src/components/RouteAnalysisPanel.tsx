@@ -161,7 +161,7 @@ export function SafeSphereSidebar({ onTriggerEmergency }: SafeSphereSidebarProps
             transition: 'all 0.15s',
           }}
         >
-          <span>🏢 Institutional Portal</span>
+          <span>🏢 Organisation Portal</span>
         </button>
       </div>
     </aside>
