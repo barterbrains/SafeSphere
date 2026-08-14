@@ -21,12 +21,16 @@ export default function RegisterPage() {
     const { error: signUpError } = await signUp(email.trim(), password, name.trim(), 'consumer');
     setLoading(false);
     if (signUpError) {
-      setError(signUpError);
+      // Supabase free tier caps email sends — show a helpful message
+      if (signUpError.toLowerCase().includes('rate limit') || signUpError.toLowerCase().includes('email rate')) {
+        setError('Too many sign-up attempts. Please wait a few minutes and try again, or contact support.');
+      } else {
+        setError(signUpError);
+      }
       return;
     }
-    // Supabase may require email confirmation — show success message
-    setSuccess('Account created! Check your email to confirm, then sign in.');
-    setTimeout(() => navigate('/login'), 3000);
+    setSuccess('Account created! You can now sign in directly.');
+    setTimeout(() => navigate('/login'), 2000);
   };
 
   return (
