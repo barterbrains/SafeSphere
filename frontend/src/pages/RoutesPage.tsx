@@ -9,8 +9,9 @@ import type { RouteOptionData } from '../mock/delhiRouteData';
 import { apiFetch } from '../utils';
 import { fetchOSRMRealRoutes } from '../services/osrmRouting';
 import { searchGeocodingNominatim, type GeocodingResult } from '../services/geocoding';
-import { fetchEnvironmentalSafetyData, type EnvironmentalSafetyFeature } from '../services/overpassEnvironmentalData';
+import { fetchEnvironmentalSafetyData, type EnvironmentalSafetyFeature, type EnvironmentalSafetySummary } from '../services/overpassEnvironmentalData';
 import { fetchIncidentsAlongRoute, reportIncidentToSupabase, type UserReportedIncident } from '../services/incidentService';
+import { calculateDynamicRouteSafety } from '../services/safeScoreEngine';
 import { useAuth } from '../context/AuthContext';
 
 export default function RoutesPage() {
@@ -41,6 +42,13 @@ export default function RoutesPage() {
 
   // Environmental Safety Features from Overpass API
   const [environmentalFeatures, setEnvironmentalFeatures] = useState<EnvironmentalSafetyFeature[]>([]);
+  const [environmentalSummary, setEnvironmentalSummary] = useState<EnvironmentalSafetySummary>({
+    streetLampsCount: 0,
+    policeStationsCount: 0,
+    cctvCount: 0,
+    hospitalsCount: 0,
+    features: [],
+  });
   const [isLoadingOverpass, setIsLoadingOverpass] = useState(false);
 
   // Real User Reported Incidents from Supabase
@@ -75,28 +83,36 @@ export default function RoutesPage() {
       if (!isMounted) return;
 
       if (!result.isFallback && result.routes.length > 0) {
-        setRoutes(result.routes);
-        setSelectedRouteId(result.routes[0].id);
         setIsOSRMActive(true);
 
-        // Fetch real Overpass environmental safety data for the active route
+        // Fetch real Overpass environmental safety data for the primary route
         setIsLoadingOverpass(true);
-        fetchEnvironmentalSafetyData(result.routes[0].coordinates)
-          .then(summary => {
-            if (isMounted) {
-              setEnvironmentalFeatures(summary.features);
-            }
-          })
-          .finally(() => {
-            if (isMounted) setIsLoadingOverpass(false);
+        const [envSummary, incs] = await Promise.all([
+          fetchEnvironmentalSafetyData(result.routes[0].coordinates),
+          fetchIncidentsAlongRoute(result.routes[0].coordinates),
+        ]);
+
+        if (isMounted) {
+          setEnvironmentalFeatures(envSummary.features);
+          setEnvironmentalSummary(envSummary);
+          setReportedIncidents(incs);
+          setIsLoadingOverpass(false);
+
+          // Dynamically compute SafeScore, tags, and explanations for each route option
+          const enrichedRoutes: RouteOptionData[] = result.routes.map(r => {
+            const computed = calculateDynamicRouteSafety(r, envSummary, incs);
+            return {
+              ...r,
+              safeScore: computed.safeScore,
+              tags: computed.tags,
+              explanation: computed.explanation,
+              safetyFactors: computed.safetyFactors,
+            };
           });
 
-        // Fetch real incidents within route buffer from Supabase
-        fetchIncidentsAlongRoute(result.routes[0].coordinates).then(incidents => {
-          if (isMounted) {
-            setReportedIncidents(incidents);
-          }
-        });
+          setRoutes(enrichedRoutes);
+          setSelectedRouteId(enrichedRoutes[0].id);
+        }
       } else {
         // Graceful fallback to static demo corridor if OSRM is unreachable
         console.log('[SafeSphere] Using cached road network fallback');
@@ -114,18 +130,36 @@ export default function RoutesPage() {
     return () => { isMounted = false; };
   }, [origin.lat, origin.lng, destination.lat, destination.lng]);
 
-  // ── When active route changes, update Overpass features & Incidents ───────
+  // ── When active route changes, update Overpass features & recalculate SafeScores ──
   useEffect(() => {
+    let isMounted = true;
     const active = routes.find(r => r.id === selectedRouteId);
     if (active && active.coordinates.length > 0) {
-      fetchEnvironmentalSafetyData(active.coordinates).then(summary => {
-        setEnvironmentalFeatures(summary.features);
-      });
-      fetchIncidentsAlongRoute(active.coordinates).then(incidents => {
-        setReportedIncidents(incidents);
+      Promise.all([
+        fetchEnvironmentalSafetyData(active.coordinates),
+        fetchIncidentsAlongRoute(active.coordinates),
+      ]).then(([envSummary, incs]) => {
+        if (!isMounted) return;
+        setEnvironmentalFeatures(envSummary.features);
+        setEnvironmentalSummary(envSummary);
+        setReportedIncidents(incs);
+
+        setRoutes(prevRoutes =>
+          prevRoutes.map(r => {
+            const computed = calculateDynamicRouteSafety(r, envSummary, incs);
+            return {
+              ...r,
+              safeScore: computed.safeScore,
+              tags: computed.tags,
+              explanation: computed.explanation,
+              safetyFactors: computed.safetyFactors,
+            };
+          })
+        );
       });
     }
-  }, [selectedRouteId, routes]);
+    return () => { isMounted = false; };
+  }, [selectedRouteId]);
 
   // ── Handle Incident Submission ───────────────────────────────────────────
   const handleSubmitIncidentReport = async (e: React.FormEvent) => {
