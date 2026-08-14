@@ -183,58 +183,92 @@ export default function InstitutionProfilePage() {
   const [appUnits, setAppUnits] = useState('Kilometers (km)');
   const [appLanguage, setAppLanguage] = useState('English (India)');
 
+  // State for Add Contact error & saving
+  const [contactError, setContactError] = useState('');
+  const [addingContact, setAddingContact] = useState(false);
+
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newContactName.trim() || !newContactPhone.trim()) return;
+    if (!newContactName.trim() || !newContactPhone.trim()) {
+      setContactError('Name and phone number are required.');
+      return;
+    }
+
+    setContactError('');
+    setAddingContact(true);
 
     if (!isDemo && user?.id) {
-      const { data, error } = await supabase.from('trusted_contacts').insert({
-        user_id: user.id,
+      try {
+        const payload = {
+          user_id: user.id,
+          name: newContactName.trim(),
+          phone: newContactPhone.trim(),
+          contact: newContactPhone.trim(),
+          relationship: newContactRel,
+          permission: newContactPerm,
+          status: 'Accepted',
+          enabled: true,
+        };
+
+        const { data, error } = await supabase
+          .from('trusted_contacts')
+          .insert(payload)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('[SafeSphere] Supabase Add Contact Error:', error);
+          setContactError(error.message || 'Failed to save contact in database.');
+          setAddingContact(false);
+          return;
+        }
+
+        const newContactItem = {
+          id: data?.id || `c-${Date.now()}`,
+          name: data?.name || newContactName.trim(),
+          phone: data?.phone || data?.contact || newContactPhone.trim(),
+          relationship: data?.relationship || newContactRel,
+          permission: data?.permission || newContactPerm,
+          status: data?.status || 'Accepted',
+        };
+
+        setContacts(prev => [newContactItem, ...prev]);
+        setShowAddContact(false);
+        setNewContactName('');
+        setNewContactPhone('');
+      } catch (err: any) {
+        console.error('[SafeSphere] Exception adding contact:', err);
+        setContactError(err?.message || 'Unexpected error adding contact.');
+      } finally {
+        setAddingContact(false);
+      }
+    } else {
+      // Demo Mode or Offline
+      const newContactItem = {
+        id: `c-${Date.now()}`,
         name: newContactName.trim(),
         phone: newContactPhone.trim(),
         relationship: newContactRel,
         permission: newContactPerm,
         status: 'Accepted',
-        enabled: true,
-      }).select().single();
-
-      if (!error && data) {
-        setContacts([
-          {
-            id: data.id,
-            name: data.name,
-            phone: data.phone || data.contact,
-            relationship: data.relationship,
-            permission: data.permission,
-            status: data.status,
-          },
-          ...contacts,
-        ]);
-      }
-    } else {
-      setContacts([
-        {
-          id: `c-${Date.now()}`,
-          name: newContactName.trim(),
-          phone: newContactPhone.trim(),
-          relationship: newContactRel,
-          permission: newContactPerm,
-          status: 'Accepted',
-        },
-        ...contacts,
-      ]);
+      };
+      setContacts(prev => [newContactItem, ...prev]);
+      setShowAddContact(false);
+      setNewContactName('');
+      setNewContactPhone('');
+      setAddingContact(false);
     }
-
-    setNewContactName('');
-    setNewContactPhone('');
-    setShowAddContact(false);
   };
 
   const handleRemoveContact = async (id: string) => {
+    // Optimistically remove from state
+    setContacts(prev => prev.filter(c => c.id !== id));
     if (!isDemo && user?.id) {
-      await supabase.from('trusted_contacts').delete().eq('id', id).eq('user_id', user.id);
+      const { error } = await supabase.from('trusted_contacts').delete().eq('id', id).eq('user_id', user.id);
+      if (error) {
+        console.error('[SafeSphere] Error removing contact:', error);
+      }
     }
-    setContacts(contacts.filter(c => c.id !== id));
   };
 
   const handleExportData = () => {
@@ -429,6 +463,13 @@ export default function InstitutionProfilePage() {
                 {showAddContact && (
                   <form onSubmit={handleAddContact} className="mb-5 p-4 rounded-xl bg-black/40 border border-indigo-500/30 flex flex-col gap-3">
                     <span className="text-xs font-bold text-indigo-300">Add New Trusted Guardian</span>
+
+                    {contactError && (
+                      <div className="p-2.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-semibold">
+                        {contactError}
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <input
                         type="text"
@@ -469,16 +510,17 @@ export default function InstitutionProfilePage() {
                     <div className="flex justify-end gap-2 mt-1">
                       <button
                         type="button"
-                        onClick={() => setShowAddContact(false)}
+                        onClick={() => { setShowAddContact(false); setContactError(''); }}
                         className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white bg-transparent border-none cursor-pointer"
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
-                        className="px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 border-none cursor-pointer"
+                        disabled={addingContact}
+                        className="px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 border-none cursor-pointer flex items-center gap-1.5"
                       >
-                        Save Guardian
+                        {addingContact ? 'Saving Guardian...' : 'Save Guardian'}
                       </button>
                     </div>
                   </form>
