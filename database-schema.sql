@@ -140,27 +140,35 @@ ALTER TABLE district_safety_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE institutional_incidents ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: users can read/update their own row
+DROP POLICY IF EXISTS "own profile" ON profiles;
 CREATE POLICY "own profile" ON profiles FOR ALL USING (id = auth.uid());
 
 -- Journeys: users own their journeys
+DROP POLICY IF EXISTS "own journeys" ON journeys;
 CREATE POLICY "own journeys" ON journeys FOR ALL USING (user_id = auth.uid());
 
 -- Trusted contacts: users own their contacts
+DROP POLICY IF EXISTS "own contacts" ON trusted_contacts;
 CREATE POLICY "own contacts" ON trusted_contacts FOR ALL USING (user_id = auth.uid());
 
 -- SOS incidents: users own their incidents
+DROP POLICY IF EXISTS "own sos" ON sos_incidents;
 CREATE POLICY "own sos" ON sos_incidents FOR ALL USING (user_id = auth.uid());
 
 -- Safety events: public read
+DROP POLICY IF EXISTS "public read events" ON safety_events;
 CREATE POLICY "public read events" ON safety_events FOR SELECT USING (true);
 
 -- Safe zones: public read
+DROP POLICY IF EXISTS "public read safe zones" ON safe_zones;
 CREATE POLICY "public read safe zones" ON safe_zones FOR SELECT USING (true);
 
 -- District safety scores: public read
+DROP POLICY IF EXISTS "public read district scores" ON district_safety_scores;
 CREATE POLICY "public read district scores" ON district_safety_scores FOR SELECT USING (true);
 
 -- Institutional incidents: scoped to institution members
+DROP POLICY IF EXISTS "institution scoped read" ON institutional_incidents;
 CREATE POLICY "institution scoped read" ON institutional_incidents FOR SELECT
   USING (institution_id = (SELECT institution_id FROM profiles WHERE id = auth.uid()));
 
