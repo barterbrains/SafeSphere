@@ -127,6 +127,7 @@ export default function SafeSphereMap({
   origin,
   destination,
   environmentalFeatures = [],
+  reportedIncidents = [],
 }: SafeSphereMapProps) {
   const initialCenter: [number, number] = [origin.lat, origin.lng];
 
