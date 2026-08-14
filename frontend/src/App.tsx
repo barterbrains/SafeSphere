@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { isAuthenticated, getUser } from './utils';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -19,20 +19,48 @@ import InstitutionAnalyticsPage from './pages/institution/InstitutionAnalyticsPa
 import InstitutionAlertsPage from './pages/institution/InstitutionAlertsPage';
 import InstitutionProfilePage from './pages/institution/InstitutionProfilePage';
 
+// ── Route Guards ───────────────────────────────────────────────────────────
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  return isAuthenticated() ? <>{children}</> : <Navigate to="/login" replace />;
+  const { session, isDemo, loading } = useAuth();
+  if (loading) return <LoadingSpinner />;
+  if (isDemo || session) return <>{children}</>;
+  return <Navigate to="/login" replace />;
 }
 
 function InstitutionRoute({ children }: { children: React.ReactNode }) {
-  const user = getUser();
-  // Allow demo access seamlessly across all tabs
-  const isDemo = user?.id?.startsWith('demo') || user?.email?.includes('demo') || localStorage.getItem('safesphere_token') === 'demo-token-xyz';
-  if (!isAuthenticated()) return <Navigate to="/institution/login" replace />;
-  if (!isDemo && user?.role !== 'institution') return <Navigate to="/institution/login" replace />;
+  const { session, profile, isDemo, loading } = useAuth();
+  if (loading) return <LoadingSpinner />;
+  // Demo users always get institution access
+  if (isDemo) return <>{children}</>;
+  if (!session) return <Navigate to="/institution/login" replace />;
+  if (profile && profile.role !== 'institution') return <Navigate to="/institution/login" replace />;
   return <>{children}</>;
 }
 
-export default function App() {
+function LoadingSpinner() {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      background: '#0a0a12',
+    }}>
+      <div style={{
+        width: 36,
+        height: 36,
+        borderRadius: '50%',
+        border: '3px solid rgba(79,70,229,0.3)',
+        borderTopColor: '#4f46e5',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+// ── App ────────────────────────────────────────────────────────────────────
+function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
@@ -60,9 +88,17 @@ export default function App() {
         <Route path="/institution/alerts" element={<InstitutionRoute><InstitutionAlertsPage /></InstitutionRoute>} />
         <Route path="/institution/profile" element={<InstitutionRoute><InstitutionProfilePage /></InstitutionRoute>} />
 
-        {/* Default redirect */}
+        {/* Default */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }

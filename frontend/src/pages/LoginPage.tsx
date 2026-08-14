@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ShieldCheck, Building2 } from 'lucide-react';
-import { apiFetch, setAuth } from '../utils';
+import { useAuth } from '../context/AuthContext';
 
 // Brand Shield Badge Component
 function SafeSphereShieldLogo({ size = 44 }: { size?: number }) {
@@ -24,7 +24,7 @@ function SafeSphereShieldLogo({ size = 44 }: { size?: number }) {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  // Clear prefilled values so users see clean placeholders
+  const { signIn, setDemoMode, profile, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -38,30 +38,20 @@ export default function LoginPage() {
       setError('Please enter your email and password.');
       return;
     }
-
     setLoading(true);
     setError('');
-    try {
-      const data = await apiFetch('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email: email.trim(), password: password.trim() }),
-      });
-      setAuth(data.token, data.user);
-      navigate(data.user.role === 'institution' ? '/institution/overview' : '/home');
-    } catch (err: any) {
-      setError(err?.message || 'Invalid credentials. Please check your email and password or use Demo.');
-    } finally {
-      setLoading(false);
+    const { error: signInError } = await signIn(email.trim(), password.trim());
+    setLoading(false);
+    if (signInError) {
+      setError(signInError);
+      return;
     }
+    // Redirect based on role (profile may already be set in context)
+    navigate(profile?.role === 'institution' ? '/institution/overview' : '/home');
   };
 
   const handleDemoLogin = () => {
-    localStorage.setItem('safesphere_token', 'demo-token-xyz');
-    localStorage.setItem('safesphere_user', JSON.stringify({
-      id: 'demo-user-123',
-      name: 'Command Agent',
-      role: 'institution',
-    }));
+    setDemoMode();
     navigate('/institution/overview');
   };
 

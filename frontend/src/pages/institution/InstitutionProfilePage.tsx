@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUser, clearAuth } from '../../utils';
+import { useAuth } from '../../context/AuthContext';
 import { InstitutionNav } from './InstitutionNav';
 
 export default function InstitutionProfilePage() {
   const navigate = useNavigate();
-  const user = getUser();
+  const { user, profile: authProfile, signOut, isDemo } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'settings'>('profile');
 
   // User Profile States
   const [profile, setProfile] = useState({
-    name: user?.name || 'Aarav Sharma',
-    email: user?.email || 'aarav.sharma@example.com',
+    name: authProfile?.name || (isDemo ? 'Aarav Sharma' : user?.email?.split('@')[0] || 'User'),
+    email: user?.email || (isDemo ? 'aarav.sharma@example.com' : ''),
     phone: '+91 98101 23456',
     bloodType: 'O+ Positive',
     allergies: 'Penicillin, Peanuts',
@@ -152,7 +152,7 @@ export default function InstitutionProfilePage() {
             </div>
 
             <button
-              onClick={() => { clearAuth(); navigate('/login'); }}
+              onClick={() => { signOut().then(() => navigate('/login')); }}
               className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
             >
               <span className="material-symbols-outlined text-sm">logout</span>
