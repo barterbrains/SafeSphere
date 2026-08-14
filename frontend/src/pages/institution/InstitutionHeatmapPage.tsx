@@ -2,15 +2,22 @@ import { useState } from 'react';
 import { InstitutionNav } from './InstitutionNav';
 import CommandMap from '../../components/CommandMap';
 import { DEMO_MAP_MARKERS } from '../../mock/demoCommandCenterData';
+import { useAuth } from '../../context/AuthContext';
 
 export default function InstitutionHeatmapPage() {
-  const [zoomLevel, setZoomLevel] = useState(12);
+  const { isDemo } = useAuth();
+  const [zoomLevel] = useState(12);
 
-  const fleetStats = [
+  const fleetStats = isDemo ? [
     { label: 'Active Patrol Units', value: '24', icon: 'directions_car', color: '#818cf8' },
     { label: 'Guardians on Route', value: '148', icon: 'shield_person', color: '#10b981' },
     { label: 'Safe Havens Active', value: '52', icon: 'storefront', color: '#6366f1' },
     { label: 'High Alert Areas', value: '4', icon: 'warning', color: '#ef4444' },
+  ] : [
+    { label: 'Active Patrol Units', value: 'Standby', icon: 'directions_car', color: '#818cf8' },
+    { label: 'Guardians on Route', value: '0', icon: 'shield_person', color: '#10b981' },
+    { label: 'Safe Havens Active', value: '18 Hubs', icon: 'storefront', color: '#6366f1' },
+    { label: 'High Alert Areas', value: '0 Active', icon: 'warning', color: '#ef4444' },
   ];
 
   return (
@@ -19,9 +26,22 @@ export default function InstitutionHeatmapPage() {
       <main className="flex-1 flex flex-col h-full overflow-y-auto p-6 md:p-10 relative">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="mb-6 relative z-10">
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Fleet Status &amp; Live Heatmap</h1>
-          <p className="text-slate-400 text-sm mt-1">Real-time GPS telemetry of patrol vehicles, guardians, and transit corridors.</p>
+        <div className="mb-6 relative z-10 flex justify-between items-end">
+          <div>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
+              Fleet Status &amp; Live Heatmap
+              {isDemo ? (
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  Demo Fleet Simulation
+                </span>
+              ) : (
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  Delhi NCR Corridor Network
+                </span>
+              )}
+            </h1>
+            <p className="text-slate-400 text-sm mt-1">Real-time GPS telemetry of patrol units, guardians, and transit safe havens.</p>
+          </div>
         </div>
 
         {/* Fleet KPI Row */}
@@ -47,7 +67,9 @@ export default function InstitutionHeatmapPage() {
           {/* Map Overlay Indicator */}
           <div className="absolute top-5 left-5 z-20 px-3.5 py-1.5 rounded-lg flex items-center gap-2 bg-[#0d0d1a]/85 backdrop-blur-xl border border-white/10 shadow-lg">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-bold text-white tracking-wider uppercase">Live Fleet Coordinates</span>
+            <span className="text-xs font-bold text-white tracking-wider uppercase">
+              {isDemo ? 'Live Simulated Patrols' : 'Delhi NCR Safety Corridors'}
+            </span>
           </div>
 
           <div className="w-full h-full rounded-xl overflow-hidden relative bg-[#0a0a12]">

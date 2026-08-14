@@ -7,7 +7,6 @@ import {
   DEMO_INCIDENTS,
   DEMO_MAP_MARKERS,
 } from '../../mock/demoCommandCenterData';
-import { apiFetch } from '../../utils';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { InstitutionNav } from './InstitutionNav';
@@ -16,60 +15,115 @@ export default function InstitutionOverviewPage() {
   const navigate = useNavigate();
   const { user, isDemo } = useAuth();
 
-  const [realData, setRealData] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [zoomLevel, setZoomLevel] = useState(12);
+  const [zoomLevel] = useState(12);
 
   // Warning banner for users who skipped adding contacts
   const [showContactWarning, setShowContactWarning] = useState(false);
 
+  // Real account metrics state
+  const [realMetrics, setRealMetrics] = useState({
+    totalJourneys: 0,
+    avgSafeScore: 0,
+    activeAlerts: 0,
+    openIncidents: 0,
+  });
+
+  const [realIncidents, setRealIncidents] = useState<any[]>([]);
+
   useEffect(() => {
     if (!isDemo && user?.id) {
-      // Check if user has zero contacts and has not permanently dismissed this session
+      const currentUserId = user.id;
+
+      // 1. Check if user has zero contacts
       const dismissed = localStorage.getItem('safesphere_dismiss_contact_warning') === 'true';
       if (!dismissed) {
         supabase
           .from('trusted_contacts')
           .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id)
+          .eq('user_id', currentUserId)
           .then(({ count }) => {
             if (count === 0) {
               setShowContactWarning(true);
             }
           });
       }
+
+      // 2. Fetch real user journey and alert statistics
+      async function loadRealStats() {
+        try {
+          const { data: journeys } = await supabase
+            .from('journeys')
+            .select('current_safe_score')
+            .eq('user_id', currentUserId);
+
+          const { data: alerts } = await supabase
+            .from('sos_incidents')
+            .select('*')
+            .eq('user_id', currentUserId);
+
+          const jCount = journeys?.length || 0;
+          const avgScore = jCount > 0
+            ? Math.round(journeys!.reduce((acc, curr) => acc + (Number(curr.current_safe_score) || 0), 0) / jCount)
+            : 0;
+
+          const activeAlertsCount = alerts?.filter(a => a.status === 'active').length || 0;
+
+          setRealMetrics({
+            totalJourneys: jCount,
+            avgSafeScore: avgScore,
+            activeAlerts: activeAlertsCount,
+            openIncidents: alerts?.length || 0,
+          });
+
+          if (alerts) {
+            setRealIncidents(alerts.map(a => ({
+              id: `#INC-${a.id.slice(0, 4).toUpperCase()}`,
+              location: a.location_name || 'Delhi NCR Region',
+              type: a.type || 'Emergency SOS',
+              severity: a.status === 'active' ? 'HIGH' : 'LOW',
+              time: new Date(a.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+            })));
+          }
+        } catch (e) {
+          console.error('Error loading overview stats:', e);
+        }
+      }
+
+      loadRealStats();
     }
   }, [isDemo, user?.id]);
 
-  useEffect(() => {
-    if (!isDemo) {
-      apiFetch('/institution/dashboard')
-        .then(setRealData)
-        .catch(console.error);
-    }
-  }, [isDemo]);
-
   const metrics = isDemo ? DEMO_METRICS : {
-    totalJourneys: realData?.overview?.totalJourneys || 0,
-    totalJourneysTrend: '+0.0%',
-    avgSafeScore: realData?.overview?.avgSafeScore || 0,
-    activeAlerts: realData?.overview?.activeAlerts || 0,
-    activeAlertsPriority: 'Normal',
-    highRiskZones: realData?.overview?.openIncidents || 0,
+    totalJourneys: realMetrics.totalJourneys,
+    totalJourneysTrend: realMetrics.totalJourneys > 0 ? '+1 today' : 'No journeys',
+    avgSafeScore: realMetrics.avgSafeScore > 0 ? realMetrics.avgSafeScore : 0,
+    activeAlerts: realMetrics.activeAlerts,
+    activeAlertsPriority: realMetrics.activeAlerts > 0 ? 'High' : 'Normal',
+    highRiskZones: realMetrics.openIncidents,
     highRiskZonesTrend: '0 today',
   };
 
-  const trends = isDemo ? DEMO_SAFESCORE_TRENDS : (realData?.trends || DEMO_SAFESCORE_TRENDS);
-  const incidents = isDemo ? DEMO_INCIDENTS : (realData?.recentIncidents || []);
-  const mapMarkers = isDemo ? DEMO_MAP_MARKERS : (realData?.mapMarkers || []);
+  const trends = isDemo ? DEMO_SAFESCORE_TRENDS : [
+    { day: 'Mon', score: realMetrics.avgSafeScore || 0 },
+    { day: 'Tue', score: realMetrics.avgSafeScore || 0 },
+    { day: 'Wed', score: realMetrics.avgSafeScore || 0 },
+    { day: 'Thu', score: realMetrics.avgSafeScore || 0 },
+    { day: 'Fri', score: realMetrics.avgSafeScore || 0 },
+    { day: 'Sat', score: realMetrics.avgSafeScore || 0 },
+    { day: 'Sun', score: realMetrics.avgSafeScore || 0 },
+  ];
+
+  const incidents = isDemo ? DEMO_INCIDENTS : realIncidents;
+  const mapMarkers = isDemo ? DEMO_MAP_MARKERS : DEMO_MAP_MARKERS; // Safe POIs remain accessible on Delhi map
 
   return (
     <div className="flex h-screen overflow-hidden text-[15px] font-['Inter',sans-serif] bg-[#0a0a12] text-[#e2e2e2]">
       
-      {/* ── Side Navigation Bar ── */}
+      {/* Side Navigation Bar */}
       <InstitutionNav />
 
-      {/* ── Main Content Canvas ── */}
+      {/* Main Content Canvas */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         
         {/* TopAppBar Mobile Fallback */}
@@ -95,9 +149,13 @@ export default function InstitutionOverviewPage() {
                 <h2 className="text-[28px] md:text-[32px] leading-tight font-extrabold text-white tracking-tight">
                   Command Center
                 </h2>
-                {isDemo && (
+                {isDemo ? (
                   <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
                     Demo Mode
+                  </span>
+                ) : (
+                  <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+                    Live Session
                   </span>
                 )}
               </div>
@@ -171,104 +229,81 @@ export default function InstitutionOverviewPage() {
               </div>
               <div className="flex items-end justify-between">
                 <span className="text-[30px] font-extrabold text-white">
-                  {metrics.totalJourneys.toLocaleString()}
+                  {metrics.totalJourneys}
                 </span>
-                <div className="flex items-center text-emerald-400 text-xs font-bold">
-                  <span className="material-symbols-outlined text-[16px]">trending_up</span>
-                  <span className="ml-1">{metrics.totalJourneysTrend}</span>
-                </div>
-              </div>
-              {/* Sparkline */}
-              <div className="absolute bottom-0 left-0 w-full h-8 opacity-20 bg-gradient-to-t from-indigo-500/40 to-transparent">
-                <svg className="w-full h-full stroke-indigo-400 fill-none stroke-2" preserveAspectRatio="none" viewBox="0 0 100 20">
-                  <path d="M0,20 Q10,15 20,18 T40,10 T60,12 T80,5 T100,2"></path>
-                </svg>
+                <span className="text-emerald-400 text-[11px] font-bold flex items-center mb-1">
+                  <span className="material-symbols-outlined text-xs mr-0.5">trending_up</span>
+                  {metrics.totalJourneysTrend}
+                </span>
               </div>
             </div>
 
-            {/* KPI 2: SafeScore Gauge */}
-            <div className="rounded-2xl p-5 flex items-center justify-between h-32 bg-[#111522]/80 backdrop-blur-2xl border border-white/10 shadow-lg hover:border-indigo-500/50 transition-colors">
-              <div className="flex flex-col justify-between h-full">
-                <span className="text-[12px] tracking-wider font-semibold text-slate-400 uppercase">Avg SafeScore</span>
-                <div>
-                  <span className="text-[30px] font-extrabold text-white">{metrics.avgSafeScore}</span>
-                  <span className="text-slate-400 text-sm">/100</span>
-                </div>
+            {/* KPI 2: SafeScore Average */}
+            <div className="rounded-2xl p-5 flex flex-col justify-between h-32 relative overflow-hidden bg-[#111522]/80 backdrop-blur-2xl border border-white/10 shadow-lg group hover:border-indigo-500/50 transition-colors">
+              <div className="flex justify-between items-start">
+                <span className="text-[12px] tracking-wider font-semibold text-slate-400 uppercase">SafeScore Index</span>
+                <span className="material-symbols-outlined text-indigo-400 text-sm opacity-80">health_and_safety</span>
               </div>
-              <div className="relative w-16 h-16 flex items-center justify-center">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                  <circle className="stroke-slate-800" cx="18" cy="18" fill="none" r="16" strokeWidth="4"></circle>
-                  <circle
-                    className="stroke-indigo-500"
-                    cx="18" cy="18" fill="none" r="16"
-                    strokeDasharray="100" strokeDashoffset="6"
-                    strokeLinecap="round" strokeWidth="4"
-                  ></circle>
-                </svg>
-                <span className="absolute material-symbols-outlined text-indigo-400 text-sm">shield</span>
+              <div className="flex items-end justify-between">
+                <span className="text-[30px] font-extrabold text-indigo-400">
+                  {metrics.avgSafeScore > 0 ? metrics.avgSafeScore : '—'}
+                </span>
+                <span className="text-slate-400 text-[11px] font-bold mb-1">
+                  {metrics.avgSafeScore > 0 ? '/100 rating' : 'Awaiting trips'}
+                </span>
               </div>
             </div>
 
             {/* KPI 3: Active Alerts */}
-            <div className="rounded-2xl p-5 flex flex-col justify-between h-32 relative overflow-hidden bg-[#111522]/80 backdrop-blur-2xl border border-white/10 shadow-lg hover:border-red-500/30 transition-colors">
+            <div className="rounded-2xl p-5 flex flex-col justify-between h-32 relative overflow-hidden bg-[#111522]/80 backdrop-blur-2xl border border-white/10 shadow-lg group hover:border-indigo-500/50 transition-colors">
               <div className="flex justify-between items-start">
-                <span className="text-[12px] tracking-wider font-semibold text-slate-400 uppercase">Active Alerts</span>
-                <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
+                <span className="text-[12px] tracking-wider font-semibold text-slate-400 uppercase">Active SOS Alerts</span>
+                <span className="material-symbols-outlined text-red-400 text-sm opacity-80">notifications_active</span>
               </div>
               <div className="flex items-end justify-between">
-                <span className="text-[30px] font-extrabold text-red-400">
+                <span className="text-[30px] font-extrabold text-white">
                   {metrics.activeAlerts}
                 </span>
-                <span className="text-slate-300 text-xs font-semibold border border-white/10 px-2.5 py-0.5 rounded-full bg-black/40">
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mb-1 ${metrics.activeAlerts > 0 ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
                   {metrics.activeAlertsPriority}
                 </span>
               </div>
             </div>
 
             {/* KPI 4: High-Risk Zones */}
-            <div className="rounded-2xl p-5 flex flex-col justify-between h-32 bg-[#111522]/80 backdrop-blur-2xl border border-white/10 shadow-lg hover:border-indigo-500/50 transition-colors">
+            <div className="rounded-2xl p-5 flex flex-col justify-between h-32 relative overflow-hidden bg-[#111522]/80 backdrop-blur-2xl border border-white/10 shadow-lg group hover:border-indigo-500/50 transition-colors">
               <div className="flex justify-between items-start">
-                <span className="text-[12px] tracking-wider font-semibold text-slate-400 uppercase">High-Risk Zones</span>
-                <span className="material-symbols-outlined text-amber-400 text-sm">warning_amber</span>
+                <span className="text-[12px] tracking-wider font-semibold text-slate-400 uppercase">Logged Hazards</span>
+                <span className="material-symbols-outlined text-amber-400 text-sm opacity-80">warning</span>
               </div>
               <div className="flex items-end justify-between">
                 <span className="text-[30px] font-extrabold text-white">
                   {metrics.highRiskZones}
                 </span>
-                <span className="text-slate-400 text-xs">{metrics.highRiskZonesTrend}</span>
+                <span className="text-slate-400 text-[11px] font-bold mb-1">
+                  {metrics.highRiskZonesTrend}
+                </span>
               </div>
             </div>
+
           </div>
 
-          {/* Bento Grid: Live Heatmap Map & SafeScore Trends */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+          {/* Bento Grid: Interactive Map + SafeScore Charts + Incidents */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            {/* Main Map Panel (8 Cols) with Interactive Leaflet CartoDB Map */}
-            <div className="lg:col-span-8 rounded-2xl p-1.5 flex flex-col min-h-[420px] relative overflow-hidden bg-[#111522]/80 backdrop-blur-2xl border border-white/10 shadow-xl">
-              {/* Heatmap overlay badge */}
-              <div className="absolute top-4 left-4 z-10 px-3.5 py-1.5 rounded-xl flex items-center gap-2 bg-[#0a0a12]/80 backdrop-blur-xl border border-white/10 shadow-lg">
-                <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
-                <span className="text-xs font-bold text-white tracking-wider uppercase">Live Heatmap</span>
+            {/* Map Canvas (8 Columns) */}
+            <div className="lg:col-span-8 rounded-2xl overflow-hidden relative shadow-2xl min-h-[460px] h-[520px] flex flex-col bg-[#111522]/80 backdrop-blur-2xl border border-white/10">
+              
+              {/* Map Floating Header */}
+              <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
+                <div className="px-3.5 py-1.5 rounded-xl flex items-center gap-2 bg-[#0a0a12]/90 backdrop-blur-xl border border-white/10 pointer-events-auto shadow-md">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-xs font-bold text-white tracking-wider uppercase">Delhi NCR Safety Grid</span>
+                </div>
               </div>
 
-              {/* Map Zoom Controls */}
-              <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-                <button
-                  onClick={() => setZoomLevel((z) => Math.min(18, z + 1))}
-                  className="w-8 h-8 rounded-lg bg-[#1a1c2e] border border-white/10 flex items-center justify-center hover:bg-indigo-600 transition-colors text-white cursor-pointer shadow"
-                >
-                  <span className="material-symbols-outlined text-sm">add</span>
-                </button>
-                <button
-                  onClick={() => setZoomLevel((z) => Math.max(8, z - 1))}
-                  className="w-8 h-8 rounded-lg bg-[#1a1c2e] border border-white/10 flex items-center justify-center hover:bg-indigo-600 transition-colors text-white cursor-pointer shadow"
-                >
-                  <span className="material-symbols-outlined text-sm">remove</span>
-                </button>
-              </div>
-
-              {/* Leaflet Map */}
-              <div className="w-full h-full rounded-xl overflow-hidden relative bg-[#0a0a12]">
+              {/* Map Canvas */}
+              <div className="w-full h-full rounded-2xl overflow-hidden relative bg-[#0a0a12]">
                 <CommandMap
                   markers={mapMarkers}
                   center={[28.6139, 77.2090]}
@@ -278,108 +313,85 @@ export default function InstitutionOverviewPage() {
               </div>
             </div>
 
-            {/* SafeScore Trends Bar Chart Panel (4 Cols) */}
-            <div className="lg:col-span-4 rounded-2xl p-6 flex flex-col bg-[#111522]/80 backdrop-blur-2xl border border-white/10 shadow-xl">
-              <h3 className="text-[18px] font-bold text-white mb-0.5">SafeScore Trends</h3>
-              <p className="text-xs text-slate-400 mb-6">7-Day regional safety aggregate</p>
+            {/* Right Feed Panel (4 Columns): SafeScore Trend + Live Incident Logs */}
+            <div className="lg:col-span-4 flex flex-col gap-6">
               
-              <div
-                className="flex-1 rounded-xl relative flex items-end p-3 border border-white/5 bg-black/20"
-                style={{
-                  backgroundImage: `
-                    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px)
-                  `,
-                  backgroundSize: '20px 20px',
-                }}
-              >
-                <div className="w-full h-[85%] relative flex items-end justify-between px-2">
-                  {trends.map((t: any, idx: number) => {
-                    const isLast = idx === trends.length - 1;
+              {/* Card 1: SafeScore Trend Bar Chart */}
+              <div className="rounded-2xl p-5 bg-[#111522]/80 backdrop-blur-2xl border border-white/10 shadow-lg">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    {isDemo ? 'Regional SafeScore Index' : 'Your Journey SafeScores'}
+                  </h3>
+                  <span className="text-xs text-indigo-400 font-bold">
+                    {isDemo ? '7-Day Trend' : 'Recent Walks'}
+                  </span>
+                </div>
+                
+                <div className="h-32 flex items-end justify-between gap-2 px-2 pt-4">
+                  {trends.map((item, index) => {
+                    const heightPercent = isDemo ? (item.score / 100) * 100 : (item.score > 0 ? (item.score / 100) * 100 : 8);
                     return (
-                      <div
-                        key={idx}
-                        className="w-[11%] rounded-t-md relative group cursor-pointer transition-all duration-300"
-                        style={{
-                          height: `${(t.score / 100) * 100}%`,
-                          background: isLast
-                            ? 'linear-gradient(to top, #4f46e5, #818cf8)'
-                            : 'linear-gradient(to top, rgba(79, 70, 229, 0.4), rgba(79, 70, 229, 0.15))',
-                          borderTop: isLast ? '2px solid #818cf8' : 'none',
-                        }}
-                      >
-                        <div className={`absolute -top-7 left-1/2 -translate-x-1/2 text-[10px] px-1.5 py-0.5 rounded-md font-extrabold transition-opacity ${isLast ? 'bg-indigo-600 text-white opacity-100 shadow' : 'bg-slate-800 text-slate-200 opacity-0 group-hover:opacity-100'}`}>
-                          {t.score}
+                      <div key={index} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+                        <div
+                          className="w-full rounded-t-md transition-all duration-300 relative"
+                          style={{
+                            height: `${heightPercent}%`,
+                            background: item.score >= 85 ? '#818cf8' : item.score >= 70 ? '#6366f1' : item.score > 0 ? '#4f46e5' : '#1e2238',
+                          }}
+                        >
+                          <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[10px] py-0.5 px-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                            {item.score > 0 ? `${item.score}` : 'No data'}
+                          </div>
                         </div>
+                        <span className="text-[10px] text-slate-500 font-medium">{item.day}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
+
+              {/* Card 2: Recent Incident Audit Stream */}
+              <div className="rounded-2xl p-5 flex-1 bg-[#111522]/80 backdrop-blur-2xl border border-white/10 shadow-lg flex flex-col">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    {isDemo ? 'Simulated Live Feed' : 'Your Event Audit Stream'}
+                  </h3>
+                  <span className="material-symbols-outlined text-xs text-slate-500 animate-spin">sync</span>
+                </div>
+
+                <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto max-h-[220px]">
+                  {incidents.length === 0 ? (
+                    <div className="py-8 text-center flex flex-col items-center justify-center gap-2">
+                      <span className="material-symbols-outlined text-2xl text-slate-600">check_circle</span>
+                      <p className="text-xs text-slate-500">No active incidents or alerts logged.</p>
+                    </div>
+                  ) : (
+                    incidents.map((inc) => (
+                      <div
+                        key={inc.id}
+                        className="p-3 rounded-xl bg-black/30 border border-white/5 flex items-start gap-3 hover:border-indigo-500/30 transition-colors"
+                      >
+                        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${inc.severity === 'HIGH' ? 'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]' : 'bg-amber-400'}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-white truncate">{inc.type}</span>
+                            <span className="text-[10px] text-slate-500">{inc.time}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 truncate mt-0.5">{inc.location}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
             </div>
 
-          </div>
-
-          {/* Incidents Table (12 Cols) */}
-          <div className="rounded-2xl overflow-hidden flex flex-col bg-[#111522]/80 backdrop-blur-2xl border border-white/10 shadow-xl">
-            <div className="p-5 border-b border-white/5 flex justify-between items-center bg-black/20">
-              <h3 className="text-[18px] font-bold text-white">Recent Logged Incidents</h3>
-              <button
-                onClick={() => navigate('/institution/incidents')}
-                className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-bold cursor-pointer border-none bg-transparent"
-              >
-                View Audit Trail ↗
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-white/5 bg-black/10">
-                    <th className="p-4">ID</th>
-                    <th className="p-4">Location</th>
-                    <th className="p-4">Category</th>
-                    <th className="p-4">Severity</th>
-                    <th className="p-4 text-right">Time</th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm">
-                  {incidents.map((inc: any) => (
-                    <tr
-                      key={inc.id}
-                      className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="p-4 font-mono text-indigo-400 font-semibold">{inc.id}</td>
-                      <td className="p-4 font-semibold text-white">{inc.location}</td>
-                      <td className="p-4 text-slate-300">{inc.type}</td>
-                      <td className="p-4">
-                        {inc.severity === 'HIGH' && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold">
-                            HIGH
-                          </span>
-                        )}
-                        {inc.severity === 'MEDIUM' && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 text-xs font-bold">
-                            MEDIUM
-                          </span>
-                        )}
-                        {inc.severity === 'LOW' && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-700/30 text-slate-300 border border-white/10 text-xs font-bold">
-                            LOW
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-4 text-right text-slate-400 text-xs">{inc.time}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </div>
 
         </div>
-      </main>
 
+      </main>
     </div>
   );
 }
