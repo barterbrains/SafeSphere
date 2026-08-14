@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Bell, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { apiFetch, timeAgo } from '../../utils';
-import { InstitutionNav } from './InstitutionOverviewPage';
+import { InstitutionNav } from './InstitutionNav';
 
 export default function InstitutionAlertsPage() {
   const [alerts, setAlerts] = useState<any[]>([]);

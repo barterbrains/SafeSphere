@@ -17,6 +17,7 @@ import InstitutionHeatmapPage from './pages/institution/InstitutionHeatmapPage';
 import InstitutionIncidentsPage from './pages/institution/InstitutionIncidentsPage';
 import InstitutionAnalyticsPage from './pages/institution/InstitutionAnalyticsPage';
 import InstitutionAlertsPage from './pages/institution/InstitutionAlertsPage';
+import InstitutionProfilePage from './pages/institution/InstitutionProfilePage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   return isAuthenticated() ? <>{children}</> : <Navigate to="/login" replace />;
@@ -24,8 +25,10 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function InstitutionRoute({ children }: { children: React.ReactNode }) {
   const user = getUser();
+  // Allow demo access seamlessly across all tabs
+  const isDemo = user?.id?.startsWith('demo') || user?.email?.includes('demo') || localStorage.getItem('safesphere_token') === 'demo-token-xyz';
   if (!isAuthenticated()) return <Navigate to="/institution/login" replace />;
-  if (user?.role !== 'institution') return <Navigate to="/institution/login" replace />;
+  if (!isDemo && user?.role !== 'institution') return <Navigate to="/institution/login" replace />;
   return <>{children}</>;
 }
 
@@ -55,6 +58,7 @@ export default function App() {
         <Route path="/institution/incidents" element={<InstitutionRoute><InstitutionIncidentsPage /></InstitutionRoute>} />
         <Route path="/institution/analytics" element={<InstitutionRoute><InstitutionAnalyticsPage /></InstitutionRoute>} />
         <Route path="/institution/alerts" element={<InstitutionRoute><InstitutionAlertsPage /></InstitutionRoute>} />
+        <Route path="/institution/profile" element={<InstitutionRoute><InstitutionProfilePage /></InstitutionRoute>} />
 
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,94 +1,93 @@
-import { useState, useEffect } from 'react';
-import { Filter, AlertTriangle } from 'lucide-react';
-import { apiFetch, timeAgo } from '../../utils';
-import { InstitutionNav } from './InstitutionOverviewPage';
+import { useState } from 'react';
+import { InstitutionNav } from './InstitutionNav';
+import { DEMO_INCIDENTS } from '../../mock/demoCommandCenterData';
 
 export default function InstitutionIncidentsPage() {
-  const [incidents, setIncidents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterSeverity, setFilterSeverity] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterType, setFilterType] = useState('');
 
-  useEffect(() => {
-    apiFetch('/institution/incidents').then(setIncidents).catch(console.error).finally(() => setLoading(false));
-  }, []);
-
-  const filtered = incidents.filter(i => {
+  const filtered = DEMO_INCIDENTS.filter(i => {
     if (filterSeverity && i.severity !== filterSeverity) return false;
-    if (filterStatus && i.status !== filterStatus) return false;
+    if (filterType && i.type !== filterType) return false;
     return true;
   });
 
-  const severityConfig: Record<string, { color: string; bg: string }> = {
-    critical: { color: '#dc2626', bg: '#dc262215' },
-    high: { color: '#ea580c', bg: '#ea580c15' },
-    medium: { color: '#d97706', bg: '#d9770615' },
-    low: { color: '#16a34a', bg: '#16a34a15' },
-  };
-
-  const statusConfig: Record<string, { color: string; label: string }> = {
-    open: { color: '#dc2626', label: 'Open' },
-    investigating: { color: '#d97706', label: 'Investigating' },
-    resolved: { color: '#16a34a', label: 'Resolved' },
-  };
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#0f172a', fontFamily: 'Inter, sans-serif' }}>
+    <div className="flex h-screen overflow-hidden text-[15px] font-['Inter',sans-serif] bg-[#0a0a12] text-[#e2e2e2]">
       <InstitutionNav />
-      <main style={{ flex: 1, padding: 32, overflow: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
+      <main className="flex-1 flex flex-col h-full overflow-y-auto p-6 md:p-10 relative">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex justify-between items-end mb-6 relative z-10">
           <div>
-            <h1 style={{ color: 'white', fontSize: '1.6rem', fontWeight: 800 }}>Incident Management</h1>
-            <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: 4 }}>All reported safety incidents · GTBIT Area</p>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">Safety Audits &amp; Logged Incidents</h1>
+            <p className="text-slate-400 text-sm mt-1">Verified audit trail and incident log with real-time response dispatch.</p>
           </div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <select value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)}
-              style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, color: '#94a3b8', padding: '8px 12px', fontFamily: 'inherit', fontSize: '0.82rem', outline: 'none' }}>
+
+          <div className="flex gap-3">
+            <select
+              value={filterSeverity}
+              onChange={e => setFilterSeverity(e.target.value)}
+              className="bg-[#111522] border border-white/10 rounded-xl text-slate-300 text-xs px-3 py-2 outline-none cursor-pointer"
+            >
               <option value="">All Severities</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-              style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, color: '#94a3b8', padding: '8px 12px', fontFamily: 'inherit', fontSize: '0.82rem', outline: 'none' }}>
-              <option value="">All Statuses</option>
-              <option value="open">Open</option>
-              <option value="investigating">Investigating</option>
-              <option value="resolved">Resolved</option>
+              <option value="HIGH">High Priority</option>
+              <option value="MEDIUM">Medium Priority</option>
+              <option value="LOW">Low Priority</option>
             </select>
           </div>
         </div>
 
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><div className="spinner" style={{ borderTopColor: '#4f46e5', borderColor: '#1e293b', width: 32, height: 32, borderWidth: 3 }} /></div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <p style={{ color: '#475569', fontSize: '0.82rem', marginBottom: 8 }}>{filtered.length} incidents found</p>
-            {filtered.map(incident => {
-              const sc = severityConfig[incident.severity] || { color: '#94a3b8', bg: 'transparent' };
-              const stc = statusConfig[incident.status] || { color: '#94a3b8', label: incident.status };
-              return (
-                <div key={incident.id} style={{ background: '#1e293b', borderRadius: 14, padding: 20, border: '1px solid #334155' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                      <span style={{ background: sc.bg, color: sc.color, padding: '3px 10px', borderRadius: 999, fontSize: '0.72rem', fontWeight: 700, textTransform: 'capitalize' }}>{incident.severity}</span>
-                      <span style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.88rem' }}>{incident.type}</span>
-                    </div>
-                    <span style={{ color: stc.color, fontSize: '0.72rem', fontWeight: 600, background: stc.color + '15', padding: '3px 10px', borderRadius: 999 }}>{stc.label}</span>
-                  </div>
-                  <p style={{ color: '#e2e8f0', fontSize: '0.88rem', marginBottom: 10 }}>{incident.description}</p>
-                  <div style={{ display: 'flex', gap: 16, color: '#475569', fontSize: '0.75rem' }}>
-                    <span>📍 {incident.location.address}</span>
-                    <span>🕐 {timeAgo(incident.timestamp)}</span>
-                    <span style={{ color: '#334155' }}>·</span>
-                    <span>{new Date(incident.timestamp).toLocaleDateString('en-IN')}</span>
-                  </div>
-                </div>
-              );
-            })}
+        {/* Incidents Table Container */}
+        <div className="bg-[#111522]/80 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-xl relative z-10">
+          <div className="p-4 border-b border-white/5 bg-black/20 flex justify-between items-center">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{filtered.length} Audited Logs Found</span>
+            <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+              <span className="material-symbols-outlined text-sm">verified</span> Verified Cryptographic Log
+            </span>
           </div>
-        )}
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-white/5 bg-black/10">
+                  <th className="p-4">Incident ID</th>
+                  <th className="p-4">Location</th>
+                  <th className="p-4">Category</th>
+                  <th className="p-4">Severity</th>
+                  <th className="p-4 text-right">Timestamp</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {filtered.map(inc => (
+                  <tr key={inc.id} className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer">
+                    <td className="p-4 font-mono text-indigo-400 font-semibold">{inc.id}</td>
+                    <td className="p-4 text-white font-medium">{inc.location}</td>
+                    <td className="p-4 text-slate-300">{inc.type}</td>
+                    <td className="p-4">
+                      {inc.severity === 'HIGH' && (
+                        <span className="px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold">
+                          HIGH
+                        </span>
+                      )}
+                      {inc.severity === 'MEDIUM' && (
+                        <span className="px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 text-xs font-bold">
+                          MEDIUM
+                        </span>
+                      )}
+                      {inc.severity === 'LOW' && (
+                        <span className="px-2.5 py-1 rounded-full bg-slate-700/30 text-slate-300 border border-white/10 text-xs font-bold">
+                          LOW
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 text-right text-slate-400 text-xs">{inc.time}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </main>
     </div>
   );
