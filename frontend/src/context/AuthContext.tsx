@@ -121,6 +121,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Auth actions ───────────────────────────────────────────────────────
   async function signIn(email: string, password: string): Promise<{ error: string | null }> {
     setLoading(true);
+    // Explicitly reset demo flag when performing a real login
+    localStorage.removeItem('safesphere_demo');
+    setIsDemo(false);
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setLoading(false);
@@ -129,6 +133,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.user) {
       const p = await fetchProfile(data.user.id);
       setProfile(p);
+      if (p) {
+        localStorage.setItem('safesphere_user', JSON.stringify({ id: p.id, name: p.name, email: data.user.email, role: p.role }));
+      }
     }
     setLoading(false);
     return { error: null };
