@@ -44,11 +44,10 @@ export function SafeSphereSidebar({ onTriggerEmergency }: SafeSphereSidebarProps
   const navigate = useNavigate();
 
   const navItems = [
-    { label: 'Command Center', icon: Activity, path: '/institution/overview', active: true },
-    { label: 'Risk Analytics', icon: BarChart2, path: '/institution/analytics' },
-    { label: 'Fleet Status', icon: Navigation, path: '/institution/heatmap' },
-    { label: 'Safety Audits', icon: ShieldCheck, path: '/institution/incidents' },
-    { label: 'Settings', icon: Settings, path: '/settings' },
+    { label: 'Safe Routes', icon: Navigation, path: '/routes', active: true },
+    { label: 'Emergency SOS', icon: AlertTriangle, path: '/emergency', active: false },
+    { label: 'Safe Profile', icon: ShieldCheck, path: '/profile', active: false },
+    { label: 'Settings', icon: Settings, path: '/settings', active: false },
   ];
 
   return (
@@ -66,7 +65,7 @@ export function SafeSphereSidebar({ onTriggerEmergency }: SafeSphereSidebarProps
     }}>
       <div>
         {/* Brand header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px', marginBottom: 32, cursor: 'pointer' }} onClick={() => navigate('/routes')}>
           <div style={{
             width: 38,
             height: 38,
@@ -82,7 +81,7 @@ export function SafeSphereSidebar({ onTriggerEmergency }: SafeSphereSidebarProps
           </div>
           <div>
             <h2 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em' }}>SafeSphere</h2>
-            <p style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 600 }}>Institutional Command</p>
+            <p style={{ fontSize: '0.68rem', color: '#818cf8', fontWeight: 600 }}>Personal Protection</p>
           </div>
         </div>
 
@@ -100,7 +99,7 @@ export function SafeSphereSidebar({ onTriggerEmergency }: SafeSphereSidebarProps
                 borderRadius: 10,
                 border: 'none',
                 background: item.active ? 'linear-gradient(135deg, #3730a3, #4338ca)' : 'transparent',
-                color: item.active ? '#FFFFFF' : '#64748B',
+                color: item.active ? '#FFFFFF' : '#94a3b8',
                 fontWeight: item.active ? 700 : 500,
                 fontSize: '0.86rem',
                 cursor: 'pointer',
@@ -110,7 +109,7 @@ export function SafeSphereSidebar({ onTriggerEmergency }: SafeSphereSidebarProps
                 boxShadow: item.active ? '0 4px 16px rgba(67, 56, 202, 0.4)' : 'none',
               }}
             >
-              <item.icon size={17} color={item.active ? '#FFFFFF' : '#64748B'} />
+              <item.icon size={17} color={item.active ? '#FFFFFF' : '#94a3b8'} />
               <span>{item.label}</span>
             </button>
           ))}
@@ -141,15 +140,16 @@ export function SafeSphereSidebar({ onTriggerEmergency }: SafeSphereSidebarProps
           onMouseLeave={e => e.currentTarget.style.background = '#b91c1c'}
         >
           <AlertTriangle size={16} />
-          <span>Emergency Response</span>
+          <span>Emergency SOS</span>
         </button>
 
         <button
-          onClick={() => navigate('/home')}
+          onClick={() => navigate('/institution/overview')}
           style={{
-            background: 'none',
-            border: 'none',
-            color: '#475569',
+            background: 'rgba(79, 70, 229, 0.08)',
+            border: '1px solid rgba(129, 140, 248, 0.2)',
+            borderRadius: 10,
+            color: '#a5b4fc',
             fontSize: '0.78rem',
             fontWeight: 600,
             display: 'flex',
@@ -157,12 +157,11 @@ export function SafeSphereSidebar({ onTriggerEmergency }: SafeSphereSidebarProps
             justifyContent: 'center',
             gap: 6,
             cursor: 'pointer',
-            padding: '4px',
-            fontFamily: 'inherit',
+            padding: '8px 10px',
+            transition: 'all 0.15s',
           }}
         >
-          <Compass size={14} />
-          <span>Consumer Mode</span>
+          <span>🏢 Institutional Portal</span>
         </button>
       </div>
     </aside>

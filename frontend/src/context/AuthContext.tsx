@@ -26,7 +26,9 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, name: string, role?: 'consumer' | 'institution') => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
-  setDemoMode: () => void;
+  setDemoMode: (role?: 'consumer' | 'institution') => void;
+  setConsumerDemoMode: () => void;
+  setInstitutionDemoMode: () => void;
   refreshProfile: () => Promise<Profile | null>;
   completeOnboarding: (data: Partial<Profile>) => Promise<{ error: string | null }>;
 }
@@ -203,20 +205,87 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   }
 
-  function setDemoMode() {
+  function setConsumerDemoMode() {
     localStorage.setItem('safesphere_demo', 'true');
-    localStorage.setItem('safesphere_token', 'demo-token-xyz');
-    localStorage.setItem('safesphere_user', JSON.stringify({
-      id: 'demo-user-123',
-      name: 'Command Agent',
-      email: 'demo@safesphere.in',
-      role: 'institution',
-    }));
+    localStorage.setItem('safesphere_token', 'demo-consumer-token');
+    const demoUser = {
+      id: 'demo-consumer-101',
+      name: 'Priya Sharma (Demo)',
+      email: 'priya.demo@safesphere.in',
+      role: 'consumer' as const,
+    };
+    localStorage.setItem('safesphere_user', JSON.stringify(demoUser));
+    setUser({
+      id: demoUser.id,
+      email: demoUser.email,
+      user_metadata: { name: demoUser.name, role: demoUser.role },
+    } as any);
+    setProfile({
+      id: demoUser.id,
+      name: demoUser.name,
+      role: 'consumer',
+      phone: '+91 98765 43210',
+      blood_type: 'O+',
+      allergies: 'None',
+      medical_conditions: 'None',
+      home_address: 'C-4/12 Janakpuri, New Delhi',
+      work_safe_zone: 'Connaught Place Outer Circle',
+      onboarded: true,
+    });
     setIsDemo(true);
   }
 
+  function setInstitutionDemoMode() {
+    localStorage.setItem('safesphere_demo', 'true');
+    localStorage.setItem('safesphere_token', 'demo-inst-token');
+    const demoUser = {
+      id: 'gtbit-inst-admin',
+      name: 'Command Administrator (GTBIT)',
+      email: 'admin@gtbit.edu.in',
+      role: 'institution' as const,
+      organization: 'Guru Tegh Bahadur Institute of Technology',
+    };
+    localStorage.setItem('safesphere_user', JSON.stringify(demoUser));
+    setUser({
+      id: demoUser.id,
+      email: demoUser.email,
+      user_metadata: { name: demoUser.name, role: demoUser.role },
+    } as any);
+    setProfile({
+      id: demoUser.id,
+      name: demoUser.name,
+      role: 'institution',
+      onboarded: true,
+    });
+    setIsDemo(true);
+  }
+
+  function setDemoMode(role: 'consumer' | 'institution' = 'consumer') {
+    if (role === 'institution') {
+      setInstitutionDemoMode();
+    } else {
+      setConsumerDemoMode();
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, isDemo, signIn, signUp, signOut, setDemoMode, refreshProfile, completeOnboarding }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        user,
+        profile,
+        loading,
+        isDemo,
+        signIn,
+        signUp,
+        signOut,
+        setDemoMode,
+        setConsumerDemoMode,
+        setInstitutionDemoMode,
+        refreshProfile,
+        completeOnboarding,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

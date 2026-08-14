@@ -13,6 +13,7 @@ import EmergencyPage from './pages/EmergencyPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import InstitutionLoginPage from './pages/institution/InstitutionLoginPage';
+import InstitutionRegisterPage from './pages/institution/InstitutionRegisterPage';
 import InstitutionOverviewPage from './pages/institution/InstitutionOverviewPage';
 import InstitutionHeatmapPage from './pages/institution/InstitutionHeatmapPage';
 import InstitutionIncidentsPage from './pages/institution/InstitutionIncidentsPage';
@@ -52,11 +53,11 @@ function OnboardingRoute({ children }: { children: React.ReactNode }) {
   const { session, profile, isDemo, loading } = useAuth();
   if (loading) return <LoadingSpinner />;
   if (!isDemo && !session) return <Navigate to="/login" replace />;
-  if (isDemo) return <Navigate to="/institution/overview" replace />;
+  if (isDemo) return <Navigate to="/routes" replace />;
 
-  // If already onboarded, send to overview
+  // If already onboarded, send to consumer routes
   if (profile && profile.onboarded === true) {
-    return <Navigate to="/institution/overview" replace />;
+    return <Navigate to="/routes" replace />;
   }
 
   return <>{children}</>;
@@ -94,6 +95,7 @@ function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/institution/login" element={<InstitutionLoginPage />} />
+        <Route path="/institution/register" element={<InstitutionRegisterPage />} />
 
         {/* Onboarding Flow for new users */}
         <Route path="/onboarding" element={<OnboardingRoute><OnboardingPage /></OnboardingRoute>} />

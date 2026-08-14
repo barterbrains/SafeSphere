@@ -97,9 +97,9 @@ export default function InstitutionAnalyticsPage() {
           .map(([month, v]) => ({ month, incidents: v.incidents, safeScore: v.safeScore }))
           .slice(-6);
 
-        // Build top risk locations from community incidents
+        // Build top risk locations from local reported incidents
         const locationBuckets: Record<string, { name: string; incidents: number; avgSafeScore: number }> = {};
-        communityIncidents.forEach((inc: any) => {
+        localIncidents.forEach((inc: any) => {
           const loc = inc.address || 'Unknown Area';
           if (!locationBuckets[loc]) locationBuckets[loc] = { name: loc, incidents: 0, avgSafeScore: 60 };
           locationBuckets[loc].incidents += 1;

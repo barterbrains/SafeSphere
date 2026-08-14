@@ -87,7 +87,7 @@ export default function OnboardingPage() {
         localStorage.setItem('safesphere_dismiss_contact_warning', 'false');
       }
 
-      navigate('/institution/overview');
+      navigate('/routes');
     } catch (err: any) {
       setError(err?.message || 'Failed to complete setup. Please try again.');
     } finally {

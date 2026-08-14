@@ -8,13 +8,12 @@ export function InstitutionNav() {
   const currentPath = location.pathname;
 
   const navItems = [
-    { label: 'Command Center', icon: 'dashboard', path: '/institution/overview' },
-    { label: 'Route Analysis', icon: 'alt_route', path: '/routes' },
-    { label: 'Risk Analytics', icon: 'analytics', path: '/institution/analytics' },
-    { label: 'Fleet Status', icon: 'local_shipping', path: '/institution/heatmap' },
-    { label: 'Safety Audits', icon: 'verified_user', path: '/institution/incidents' },
-    { label: 'Safety Alerts', icon: 'notifications_active', path: '/institution/alerts' },
-    { label: 'Profile & Access', icon: 'account_circle', path: '/institution/profile' },
+    { label: 'Overview', icon: 'dashboard', path: '/institution/overview' },
+    { label: 'Heatmap', icon: 'local_shipping', path: '/institution/heatmap' },
+    { label: 'Incidents', icon: 'verified_user', path: '/institution/incidents' },
+    { label: 'Analytics', icon: 'analytics', path: '/institution/analytics' },
+    { label: 'Alerts', icon: 'notifications_active', path: '/institution/alerts' },
+    { label: 'Profile', icon: 'apartment', path: '/institution/profile' },
     { label: 'Settings', icon: 'settings', path: '/institution/settings' },
   ];
 
@@ -61,11 +60,11 @@ export function InstitutionNav() {
 
       <div className="px-4 mt-auto">
         <button
-          onClick={() => navigate('/emergency')}
-          className="w-full bg-gradient-to-r from-[#dc2626] to-[#b91c1c] hover:from-[#ef4444] hover:to-[#dc2626] text-white text-[12px] tracking-wider font-extrabold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(220,38,38,0.5)] transition-all cursor-pointer border border-red-500/40 animate-pulse"
+          onClick={() => navigate('/institution/alerts')}
+          className="w-full bg-gradient-to-r from-[#dc2626] to-[#b91c1c] hover:from-[#ef4444] hover:to-[#dc2626] text-white text-[12px] tracking-wider font-extrabold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(220,38,38,0.5)] transition-all cursor-pointer border border-red-500/40"
         >
-          <span className="material-symbols-outlined text-base">emergency</span>
-          Emergency SOS Response
+          <span className="material-symbols-outlined text-base">campaign</span>
+          Broadcast Campus Alert
         </button>
       </div>
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Play, Navigation2, AlertTriangle, MapPin, Shield,
   Activity, Users, ChevronDown, ChevronRight,
-  BarChart2, Lock, Bell, Map, ArrowRight
+  BarChart2, Lock, Bell, Map, ArrowRight, Building2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -155,10 +155,10 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 export default function LandingPage() {
   const navigate = useNavigate();
 
-  const { setDemoMode } = useAuth();
+  const { setConsumerDemoMode } = useAuth();
   const handleDemoLogin = () => {
-    setDemoMode();
-    navigate('/institution/overview');
+    setConsumerDemoMode();
+    navigate('/routes');
   };
 
   const capabilities = [
@@ -309,11 +309,37 @@ export default function LandingPage() {
             >{l.label}</a>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <button onClick={() => navigate('/login')} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.88rem', fontWeight: 500, cursor: 'pointer', padding: '8px 12px', fontFamily: 'inherit', transition: 'color 0.15s' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#ffffff')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
-          >Log In</button>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button
+            onClick={() => navigate('/login')}
+            style={{
+              background: 'rgba(99,102,241,0.08)',
+              border: '1px solid rgba(129,140,248,0.3)',
+              borderRadius: 999, padding: '8px 16px',
+              color: '#a5b4fc', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.18)'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; e.currentTarget.style.color = '#a5b4fc'; }}
+          >
+            <Users size={14} />
+            Log In
+          </button>
+          <button
+            onClick={() => navigate('/institution/login')}
+            style={{
+              background: 'rgba(99,102,241,0.08)',
+              border: '1px solid rgba(129,140,248,0.3)',
+              borderRadius: 999, padding: '8px 16px',
+              color: '#a5b4fc', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.18)'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; e.currentTarget.style.color = '#a5b4fc'; }}
+          >
+            <Building2 size={14} />
+            Institutional Login
+          </button>
           <button onClick={handleDemoLogin} style={{
             background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
             border: '1px solid rgba(129, 140, 248, 0.35)',
@@ -355,7 +381,7 @@ export default function LandingPage() {
             <p style={{ fontSize: '1.05rem', color: '#94a3b8', lineHeight: 1.7, maxWidth: 460, marginBottom: 36 }}>
               Real-time risk assessment built on live OpenStreetMap data, NCRB district statistics, and environmental factors — not guesswork. One-tap protection for your most confident daily life.
             </p>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 48 }}>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 48, alignItems: 'center' }}>
               <button onClick={() => navigate('/register')} style={{
                 background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
                 border: '1px solid rgba(129, 140, 248, 0.35)',
@@ -376,6 +402,21 @@ export default function LandingPage() {
                 onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
               >
                 Try Demo
+              </button>
+              <button
+                onClick={() => navigate('/institution/login')}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(129,140,248,0.35)',
+                  borderRadius: 999, padding: '13px 22px',
+                  color: '#a5b4fc', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit',
+                  display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.12)'; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#a5b4fc'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                <Building2 size={16} />
+                Institutional Login
               </button>
             </div>
             <div style={{

@@ -24,7 +24,7 @@ function SafeSphereShieldLogo({ size = 44 }: { size?: number }) {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { signIn, setDemoMode, profile, loading: authLoading } = useAuth();
+  const { signIn, setConsumerDemoMode, profile, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -52,12 +52,12 @@ export default function LoginPage() {
       }
       return;
     }
-    navigate('/institution/overview');
+    navigate('/routes');
   };
 
   const handleDemoLogin = () => {
-    setDemoMode();
-    navigate('/institution/overview');
+    setConsumerDemoMode();
+    navigate('/routes');
   };
 
   return (
@@ -420,49 +420,8 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              {/* Dedicated Institutional Login Button in Card */}
-              <div style={{
-                marginTop: 6,
-                paddingTop: 16,
-                borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-              }}>
-                <button
-                  type="button"
-                  onClick={() => navigate('/institution/login')}
-                  style={{
-                    width: '100%',
-                    height: 46,
-                    borderRadius: 12,
-                    border: '1px solid rgba(129, 140, 248, 0.25)',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                    color: '#a5b4fc',
-                    background: 'rgba(79, 70, 229, 0.08)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(79, 70, 229, 0.16)';
-                    e.currentTarget.style.borderColor = 'rgba(129, 140, 248, 0.5)';
-                    e.currentTarget.style.color = '#ffffff';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(79, 70, 229, 0.08)';
-                    e.currentTarget.style.borderColor = 'rgba(129, 140, 248, 0.25)';
-                    e.currentTarget.style.color = '#a5b4fc';
-                  }}
-                >
-                  <Building2 size={16} />
-                  <span>Institutional Command Login</span>
-                </button>
-              </div>
+
+
             </form>
           </div>
 
