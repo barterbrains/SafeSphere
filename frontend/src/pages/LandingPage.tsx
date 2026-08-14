@@ -5,6 +5,7 @@ import {
   Activity, Users, ChevronDown, ChevronRight,
   BarChart2, Lock, Bell, Map, ArrowRight
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 // ── Shield Emblem Logo ────────────────────────────────────────────────────────
 function SafeSphereLogo({ size = 32 }: { size?: number }) {
@@ -154,9 +155,9 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 export default function LandingPage() {
   const navigate = useNavigate();
 
+  const { setDemoMode } = useAuth();
   const handleDemoLogin = () => {
-    localStorage.setItem('safesphere_token', 'demo-token-xyz');
-    localStorage.setItem('safesphere_user', JSON.stringify({ id: 'demo-user-123', name: 'Command Agent', role: 'institution' }));
+    setDemoMode();
     navigate('/institution/overview');
   };
 
@@ -374,7 +375,7 @@ export default function LandingPage() {
                 onMouseEnter={e => { e.currentTarget.style.background = 'rgba(79, 70, 229, 0.12)'; e.currentTarget.style.borderColor = 'rgba(129, 140, 248, 0.35)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
               >
-                <Play size={14} fill="currentColor" /> Watch Film
+                Try Demo
               </button>
             </div>
             <div style={{

@@ -28,13 +28,11 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 }
 
 function InstitutionRoute({ children }: { children: React.ReactNode }) {
-  const { session, profile, isDemo, loading } = useAuth();
+  const { session, isDemo, loading } = useAuth();
   if (loading) return <LoadingSpinner />;
-  // Demo users always get institution access
-  if (isDemo) return <>{children}</>;
-  if (!session) return <Navigate to="/institution/login" replace />;
-  if (profile && profile.role !== 'institution') return <Navigate to="/institution/login" replace />;
-  return <>{children}</>;
+  // Allow demo users AND any signed-in user
+  if (isDemo || session) return <>{children}</>;
+  return <Navigate to="/login" replace />;
 }
 
 function LoadingSpinner() {

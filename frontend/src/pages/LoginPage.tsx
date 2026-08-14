@@ -46,8 +46,8 @@ export default function LoginPage() {
       setError(signInError);
       return;
     }
-    // Redirect based on role (profile may already be set in context)
-    navigate(profile?.role === 'institution' ? '/institution/overview' : '/home');
+    // All users land on the main Command Centre dashboard
+    navigate('/institution/overview');
   };
 
   const handleDemoLogin = () => {
