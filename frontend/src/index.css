@@ -15,11 +15,11 @@
   --border:        #1E2733;
   --border-strong: #2A3441;
 
-  /* Accent — Emerald/Teal */
-  --accent:        #10B981;
-  --accent-hover:  #059669;
-  --accent-dim:    rgba(16,185,129,0.15);
-  --accent-glow:   rgba(16,185,129,0.25);
+  /* Accent — Teal/Mint */
+  --accent:        #2dd4bf;
+  --accent-hover:  #14b8a6;
+  --accent-dim:    rgba(45,212,191,0.12);
+  --accent-glow:   rgba(45,212,191,0.28);
 
   /* Semantic */
   --danger:        #EF4444;
@@ -29,8 +29,8 @@
   --warning-dim:   rgba(245,158,11,0.15);
   --info:          #3B82F6;
   --info-dim:      rgba(59,130,246,0.15);
-  --success:       #10B981;
-  --success-dim:   rgba(16,185,129,0.15);
+  --success:       #2dd4bf;
+  --success-dim:   rgba(45,212,191,0.12);
 
   /* Typography */
   --text-primary:   #F1F5F9;
@@ -49,10 +49,10 @@
   --radius-full: 9999px;
 
   /* Legacy aliases (keep so institution portal still works) */
-  --primary:       #10B981;
-  --primary-hover: #059669;
-  --primary-light: rgba(16,185,129,0.15);
-  --primary-glow:  rgba(16,185,129,0.25);
+  --primary:       #2dd4bf;
+  --primary-hover: #14b8a6;
+  --primary-light: rgba(45,212,191,0.12);
+  --primary-glow:  rgba(45,212,191,0.28);
   --bg-primary:    #0B0F14;
   --bg-card:       #111827;
 }
@@ -203,9 +203,9 @@ body {
 .btn-secondary {
   background: var(--accent-dim);
   color: var(--accent);
-  border: 1px solid rgba(16,185,129,0.25);
+  border: 1px solid rgba(45,212,191,0.25);
 }
-.btn-secondary:hover { background: rgba(16,185,129,0.22); }
+.btn-secondary:hover { background: rgba(45,212,191,0.18); }
 
 .btn-danger {
   background: var(--danger);
@@ -461,4 +461,17 @@ body {
   bottom: 80px;
   right: 16px;
   z-index: 100;
+}
+
+/* ═══════════════════════════════════════
+   LANDING PAGE — RESPONSIVE
+   ═══════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Hero two-col collapses to single col — handled by auto-fit grid */
+  /* Make phone mockup smaller */
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(45,212,191,0.6); }
+  50%       { box-shadow: 0 0 12px rgba(45,212,191,1); }
 }

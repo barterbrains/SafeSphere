@@ -1,179 +1,284 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Clock, Navigation, AlertTriangle, ShieldCheck, Route as RouteIcon } from 'lucide-react';
-import { apiFetch, getRiskCategory, formatEta, formatDistance } from '../utils';
-import MapView from '../components/MapView';
-import StatusPill from '../components/ui/StatusPill';
-
-/* Map risk score → StatusPill variant */
-const riskVariant = (score: number) =>
-  score >= 80 ? 'safe' : score >= 65 ? 'moderate' : score >= 50 ? 'elevated' : 'danger';
-
-const scoreColor = (score: number) =>
-  score >= 80 ? '#34D399' : score >= 65 ? '#FCD34D' : score >= 50 ? '#FB923C' : '#FCA5A5';
+import { Search, MapPin, AlertTriangle, ShieldCheck, Activity, Users, ArrowLeft } from 'lucide-react';
+import SafeSphereMap from '../components/SafeSphereMap';
+import { SafeSphereSidebar, RouteAnalysisPanel } from '../components/RouteAnalysisPanel';
+import { DELHI_DEMO_ROUTES, DELHI_SAFETY_POIS } from '../mock/delhiRouteData';
+import type { RouteOptionData } from '../mock/delhiRouteData';
+import { apiFetch } from '../utils';
 
 export default function RoutesPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const destId = searchParams.get('destinationId');
-  const destAddress = searchParams.get('destAddress');
+  const destAddressParam = searchParams.get('destAddress') || 'India Gate, New Delhi';
+  const originAddressParam = searchParams.get('originAddress') || 'Connaught Place, New Delhi';
 
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // Origin & Destination coordinates
+  const [origin, setOrigin] = useState({
+    lat: 28.6315,
+    lng: 77.2167,
+    address: originAddressParam,
+  });
 
+  const [destination, setDestination] = useState({
+    lat: 28.6129,
+    lng: 77.2295,
+    address: destAddressParam,
+  });
+
+  const [routes, setRoutes] = useState<RouteOptionData[]>(DELHI_DEMO_ROUTES);
+  const [selectedRouteId, setSelectedRouteId] = useState<string>('route-safest-delhi');
+  const [isRerouting, setIsRerouting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(destination.address);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+
+  // Search autocomplete
   useEffect(() => {
-    if (!destId && !destAddress) { navigate('/search'); return; }
-    apiFetch('/routes/calculate', {
-      method: 'POST',
-      body: JSON.stringify({ destinationId: destId, originAddress: destAddress }),
-    }).then(setData).catch(console.error).finally(() => setLoading(false));
-  }, [destId, destAddress, navigate]);
+    if (!searchQuery.trim() || searchQuery === destination.address) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const data = await apiFetch(`/routes/search?q=${encodeURIComponent(searchQuery)}`);
+        setSearchResults(data);
+      } catch {
+        // Fallback demo search results
+        setSearchResults([
+          { id: 'loc-1', address: 'Connaught Place, New Delhi', lat: 28.6315, lng: 77.2167 },
+          { id: 'loc-2', address: 'India Gate, New Delhi', lat: 28.6129, lng: 77.2295 },
+          { id: 'loc-3', address: 'Rajouri Garden, New Delhi', lat: 28.6473, lng: 77.1221 },
+          { id: 'loc-4', address: 'Saket Select CityWalk, New Delhi', lat: 28.5283, lng: 77.2185 },
+        ].filter(d => d.address.toLowerCase().includes(searchQuery.toLowerCase())));
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery, destination.address]);
 
-  /* ── Loading ── */
-  if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0B0F14' }}>
-      <div className="spinner" style={{ borderTopColor: '#10B981', borderColor: '#1E2733', width: 36, height: 36, borderWidth: 3, marginBottom: 20 }} />
-      <p style={{ fontWeight: 600, color: '#475569', fontSize: '0.9rem' }}>Calculating safe routes...</p>
-    </div>
-  );
-
-  /* ── Error ── */
-  if (!data || !data.routes) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: '#0B0F14' }}>
-      <div style={{ width: '100%', maxWidth: 380, background: '#111827', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 16, padding: 32, textAlign: 'center' }}>
-        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(239,68,68,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-          <AlertTriangle size={26} color="#EF4444" />
-        </div>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 8, color: '#F1F5F9' }}>Unable to Calculate Routes</h3>
-        <p style={{ color: '#475569', fontSize: '0.88rem', marginBottom: 24, lineHeight: 1.5 }}>
-          We could not calculate safety scores for this route. Please check your destination and try again.
-        </p>
-        <button className="btn btn-primary btn-full" onClick={() => navigate('/search')}>
-          <ArrowLeft size={16} /> Try Another Search
-        </button>
-      </div>
-    </div>
-  );
-
-  const { origin, destination, routes } = data;
-
-  const routeCards = [
-    { type: 'safest',   icon: ShieldCheck, title: 'Safest Route',   r: routes.find((r: any) => r.routeType === 'safest') },
-    { type: 'balanced', icon: RouteIcon,   title: 'Balanced Route', r: routes.find((r: any) => r.routeType === 'balanced'), recommended: true },
-    { type: 'fastest',  icon: Clock,       title: 'Fastest Route',  r: routes.find((r: any) => r.routeType === 'fastest') },
-  ].filter(x => x.r);
-
-  const iconBgMap: Record<string, string> = {
-    safest:   'rgba(16,185,129,0.12)',
-    balanced: 'rgba(59,130,246,0.12)',
-    fastest:  'rgba(245,158,11,0.12)',
+  const handleSelectDestination = (destItem: any) => {
+    setDestination({
+      lat: destItem.latitude || destItem.lat || 28.6129,
+      lng: destItem.longitude || destItem.lng || 77.2295,
+      address: destItem.address || destItem.name,
+    });
+    setSearchQuery(destItem.address || destItem.name);
+    setIsSearchOpen(false);
   };
-  const iconColorMap: Record<string, string> = {
-    safest: '#34D399', balanced: '#93C5FD', fastest: '#FCD34D',
+
+  // Initiate Route → Journey Guardian Flow
+  const handleInitiateRoute = async () => {
+    const activeRoute = routes.find(r => r.id === selectedRouteId) || routes[0];
+    try {
+      const res = await apiFetch('/journeys', {
+        method: 'POST',
+        body: JSON.stringify({
+          routeId: activeRoute.id,
+          origin,
+          destination,
+          routeType: activeRoute.routeType,
+          initialSafeScore: activeRoute.safeScore,
+          eta: activeRoute.duration,
+          distance: activeRoute.distance,
+        }),
+      });
+      navigate(`/journey/${res.journey.id}`);
+    } catch {
+      // Fallback demo mock journey
+      navigate(`/journey/demo-journey-123`);
+    }
+  };
+
+  // Simulated Safety Alert Event demo trigger
+  const handleSimulateIncident = () => {
+    setIsRerouting(true);
+    // Lower score of current selected route and auto-switch to a safer detour
+    setRoutes(prev => prev.map(r => {
+      if (r.id === selectedRouteId) {
+        return {
+          ...r,
+          safeScore: Math.max(50, r.safeScore - 26),
+          tags: ['Elevated Risk Detected Ahead', ...r.tags],
+        };
+      }
+      return r;
+    }));
   };
 
   return (
-    <div style={{ background: '#0B0F14', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{
+      display: 'flex',
+      height: '100vh',
+      width: '100vw',
+      background: '#0B0D14',
+      fontFamily: "'Inter', sans-serif",
+      color: '#F1F5F9',
+      overflow: 'hidden',
+      position: 'relative',
+    }}>
+      {/* ── Left Fixed Sidebar (Desktop) ── */}
+      <div className="routes-sidebar-wrapper">
+        <SafeSphereSidebar onTriggerEmergency={() => navigate('/emergency')} />
+      </div>
 
-      {/* Sticky header */}
-      <div style={{ background: '#0B0F14', padding: '16px', position: 'sticky', top: 0, zIndex: 50, borderBottom: '1px solid #1E2733' }}>
-        <div style={{ maxWidth: 540, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => navigate(-1)} aria-label="Go Back" style={{ background: '#131A24', border: '1px solid #1E2733', borderRadius: 8, padding: 8, cursor: 'pointer', color: '#94A3B8', display: 'flex' }}>
-            <ArrowLeft size={20} />
-          </button>
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', flexShrink: 0, boxShadow: '0 0 6px #10B981' }} />
-              <p style={{ fontSize: '0.78rem', color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{origin.address}</p>
+      {/* ── Center / Main Map Space ── */}
+      <div style={{
+        flex: 1,
+        position: 'relative',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        
+        {/* Top Floating Search & Telemetry Controls */}
+        <div style={{
+          position: 'absolute',
+          top: 20,
+          left: 24,
+          zIndex: 1000,
+          display: 'flex',
+          gap: 12,
+          alignItems: 'center',
+        }}>
+          {/* Quick Destination Search Box */}
+          <div style={{ position: 'relative', width: 320 }}>
+            <div style={{
+              background: 'rgba(18, 21, 34, 0.92)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 12,
+              padding: '10px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+              backdropFilter: 'blur(12px)',
+            }}>
+              <Search size={16} color="#818cf8" />
+              <input
+                type="text"
+                placeholder="Search Delhi destination..."
+                value={searchQuery}
+                onFocus={() => setIsSearchOpen(true)}
+                onChange={e => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchOpen(true);
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  width: '100%',
+                }}
+              />
             </div>
-            <div style={{ borderLeft: '2px dotted #1E2733', height: 8, margin: '2px 0 2px 3px' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
-              <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#F1F5F9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{destination.address}</p>
-            </div>
+
+            {/* Autocomplete Dropdown */}
+            {isSearchOpen && searchResults.length > 0 && (
+              <div style={{
+                position: 'absolute',
+                top: 50,
+                left: 0,
+                right: 0,
+                background: '#151928',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: 12,
+                overflow: 'hidden',
+                boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
+                zIndex: 1001,
+              }}>
+                {searchResults.map((res, i) => (
+                  <div
+                    key={res.id || i}
+                    onClick={() => handleSelectDestination(res)}
+                    style={{
+                      padding: '12px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      cursor: 'pointer',
+                      borderBottom: i < searchResults.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
+                      fontSize: '0.82rem',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(79, 70, 229, 0.15)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <MapPin size={14} color="#818cf8" />
+                    <div>
+                      <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{res.address || res.name}</div>
+                      {res.zone && <div style={{ color: '#64748B', fontSize: '0.72rem' }}>{res.zone}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Simulate Safety Alert (Interactive Demo Button) */}
+          <button
+            onClick={handleSimulateIncident}
+            style={{
+              background: 'rgba(239, 68, 68, 0.2)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              color: '#FCA5A5',
+              padding: '10px 14px',
+              borderRadius: 12,
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              backdropFilter: 'blur(12px)',
+            }}
+          >
+            <AlertTriangle size={14} />
+            <span>Simulate Risk Alert</span>
+          </button>
+        </div>
+
+        {/* The Leaflet OpenStreetMap Container */}
+        <div style={{ flex: 1, width: '100%', height: '100%' }}>
+          <SafeSphereMap
+            routes={routes}
+            selectedRouteId={selectedRouteId}
+            onSelectRoute={id => setSelectedRouteId(id)}
+            origin={origin}
+            destination={destination}
+            pois={DELHI_SAFETY_POIS}
+            showSafetyZones={true}
+          />
+        </div>
+
+        {/* ── Right Floating Route Analysis Panel (Matching Reference) ── */}
+        <div style={{
+          position: 'absolute',
+          top: 20,
+          right: 24,
+          bottom: 20,
+          zIndex: 1000,
+          display: 'flex',
+        }}>
+          <RouteAnalysisPanel
+            routes={routes}
+            selectedRouteId={selectedRouteId}
+            onSelectRoute={id => setSelectedRouteId(id)}
+            destinationAddress={destination.address}
+            onInitiateRoute={handleInitiateRoute}
+            isRerouting={isRerouting}
+          />
         </div>
       </div>
 
-      {/* Map */}
-      <div style={{ maxWidth: 540, margin: '0 auto', padding: '16px' }}>
-        <MapView
-          origin={{ lat: origin.latitude, lng: origin.longitude, address: origin.address }}
-          destination={{ lat: destination.latitude, lng: destination.longitude, address: destination.address }}
-          height="200px"
-          showAlternate={true}
-        />
-      </div>
-
-      {/* Route cards */}
-      <div style={{ maxWidth: 540, margin: '0 auto', padding: '0 16px 32px' }}>
-        <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14, paddingLeft: 2 }}>
-          Recommended Routes
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {routeCards.map(({ type, icon: Icon, title, r, recommended }) => (
-            <div
-              key={type}
-              onClick={() => navigate(`/route/${r.id}`)}
-              style={{
-                background: '#111827',
-                border: `1px solid ${recommended ? 'rgba(16,185,129,0.35)' : '#1E2733'}`,
-                borderRadius: 14, padding: 18,
-                cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = '#131A24'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '#111827'; }}
-            >
-              {recommended && (
-                <div style={{
-                  position: 'absolute', top: 0, right: 0,
-                  background: '#10B981', color: 'white',
-                  fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.08em',
-                  padding: '4px 14px', borderBottomLeftRadius: 10,
-                }}>
-                  RECOMMENDED
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ background: iconBgMap[type], padding: 10, borderRadius: 10 }}>
-                    <Icon size={20} color={iconColorMap[type]} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: '0.97rem', fontWeight: 800, color: '#F1F5F9' }}>{title}</h3>
-                    <p style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600, marginTop: 2 }}>
-                      {formatEta(r.eta)} · {formatDistance(r.distance)}
-                    </p>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 2 }}>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 900, color: scoreColor(r.safeScore), lineHeight: 1 }}>
-                      {Math.round(r.safeScore)}
-                    </span>
-                    <span style={{ fontSize: '0.68rem', color: '#334155', fontWeight: 600 }}>/100</span>
-                  </div>
-                  <StatusPill label={getRiskCategory(r.safeScore).label} variant={riskVariant(r.safeScore)} style={{ marginTop: 5 }} />
-                </div>
-              </div>
-
-              <div style={{ background: '#0B0F14', padding: '10px 14px', borderRadius: 8, fontSize: '0.8rem', color: '#475569', lineHeight: 1.5, border: '1px solid #1E2733' }}>
-                {r.explanation}
-              </div>
-
-              {r.warnings.length > 0 && type !== 'safest' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, color: '#FB923C', fontSize: '0.75rem', fontWeight: 600 }}>
-                  <AlertTriangle size={13} />
-                  <span>{r.warnings[0]}</span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      <style>{`
+        @media (max-width: 1024px) {
+          .routes-sidebar-wrapper {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
