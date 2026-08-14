@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import { MapContainer, TileLayer, Polyline, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import type { RouteOptionData, SafetyZonePOI } from '../mock/delhiRouteData';
+import type { RouteOptionData } from '../mock/delhiRouteData';
+import type { EnvironmentalSafetyFeature } from '../services/overpassEnvironmentalData';
 
 interface SafeSphereMapProps {
   routes: RouteOptionData[];
@@ -9,7 +10,8 @@ interface SafeSphereMapProps {
   onSelectRoute: (id: string) => void;
   origin: { lat: number; lng: number; address: string };
   destination: { lat: number; lng: number; address: string };
-  pois?: SafetyZonePOI[];
+  environmentalFeatures?: EnvironmentalSafetyFeature[];
+  pois?: any[];
   showSafetyZones?: boolean;
 }
 
@@ -41,40 +43,41 @@ const destinationIcon = L.divIcon({
   iconAnchor: [17, 17],
 });
 
-// POI Icons matching SafeSphere branding
-function createPoiIcon(type: string) {
-  let color = '#2dd4bf';
-  let char = '🛡';
+// Real Environmental Feature Marker Icons (Police, Street Lamps, CCTV, Hospitals)
+function createFeatureIcon(type: 'street_lamp' | 'police' | 'cctv' | 'hospital') {
+  let borderColor = '#818cf8';
+  let char = '💡';
+
   if (type === 'police') {
-    color = '#818cf8';
+    borderColor = '#38bdf8';
     char = '👮';
+  } else if (type === 'cctv') {
+    borderColor = '#a855f7';
+    char = '📹';
   } else if (type === 'hospital') {
-    color = '#f87171';
+    borderColor = '#f87171';
     char = '🏥';
-  } else if (type === 'high_footfall') {
-    color = '#60a5fa';
-    char = '👥';
-  } else if (type === 'incident') {
-    color = '#f59e0b';
-    char = '⚠️';
+  } else if (type === 'street_lamp') {
+    borderColor = '#facc15';
+    char = '💡';
   }
 
   return L.divIcon({
     html: `
       <div style="
-        width: 26px; height: 26px; border-radius: 50%;
-        background: #121522;
-        border: 2px solid ${color};
+        width: 24px; height: 24px; border-radius: 50%;
+        background: #111522;
+        border: 2px solid ${borderColor};
         display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 0 8px ${color}88;
+        box-shadow: 0 0 8px ${borderColor}99;
         font-size: 11px;
       ">
         ${char}
       </div>
     `,
-    className: 'poi-marker',
-    iconSize: [26, 26],
-    iconAnchor: [13, 13],
+    className: 'environmental-feature-marker',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
   });
 }
 
@@ -99,8 +102,7 @@ export default function SafeSphereMap({
   onSelectRoute,
   origin,
   destination,
-  pois = [],
-  showSafetyZones = true,
+  environmentalFeatures = [],
 }: SafeSphereMapProps) {
   const initialCenter: [number, number] = [origin.lat, origin.lng];
 
@@ -121,37 +123,7 @@ export default function SafeSphereMap({
 
         <MapBoundsUpdater routes={routes} selectedRouteId={selectedRouteId} />
 
-        {/* Safety Zone Visualizations (Subtle SafeScore Circles) */}
-        {showSafetyZones && (
-          <>
-            {/* Safe Haven Corridor Circle (Green/Teal) */}
-            <Circle
-              center={[28.6230, 77.2205]}
-              radius={400}
-              pathOptions={{
-                color: '#2dd4bf',
-                fillColor: '#2dd4bf',
-                fillOpacity: 0.08,
-                weight: 1.5,
-                dashArray: '4 4',
-              }}
-            />
-            {/* Caution/Reduced Illumination Area Circle (Amber) */}
-            <Circle
-              center={[28.6260, 77.2280]}
-              radius={300}
-              pathOptions={{
-                color: '#f59e0b',
-                fillColor: '#f59e0b',
-                fillOpacity: 0.07,
-                weight: 1.5,
-                dashArray: '3 3',
-              }}
-            />
-          </>
-        )}
-
-        {/* Render 3 Polylines (Unselected first, Selected on Top) */}
+        {/* Render Non-Selected Route Polylines */}
         {routes
           .filter((r) => r.id !== selectedRouteId)
           .map((route) => (
@@ -163,14 +135,14 @@ export default function SafeSphereMap({
               }}
               pathOptions={{
                 color: route.routeType === 'fastest' ? '#f87171' : '#64748b',
-                weight: 3.5,
-                opacity: 0.45,
+                weight: 4,
+                opacity: 0.5,
                 dashArray: route.routeType === 'fastest' ? '6 6' : undefined,
               }}
             />
           ))}
 
-        {/* Selected Route Polyline (Highlighted, Thick, Glowing) */}
+        {/* Render Selected Active Route Polyline (Thick, Radiant Indigo Glow) */}
         {routes
           .filter((r) => r.id === selectedRouteId)
           .map((route) => (
@@ -178,24 +150,27 @@ export default function SafeSphereMap({
               key={route.id}
               positions={route.coordinates}
               pathOptions={{
-                color: route.routeType === 'safest' ? '#818cf8' : route.routeType === 'balanced' ? '#94a3b8' : '#f87171',
+                color: route.routeType === 'safest' ? '#818cf8' : route.routeType === 'balanced' ? '#38bdf8' : '#f87171',
                 weight: 6.5,
                 opacity: 1,
               }}
             />
           ))}
 
-        {/* POI Markers */}
-        {pois.map((poi) => (
+        {/* Real Environmental Safety Feature Markers from Overpass API (Street Lamps, Police, CCTV, Hospitals) */}
+        {environmentalFeatures.map((feat) => (
           <Marker
-            key={poi.id}
-            position={[poi.lat, poi.lng]}
-            icon={createPoiIcon(poi.type)}
+            key={feat.id}
+            position={[feat.lat, feat.lng]}
+            icon={createFeatureIcon(feat.type)}
           >
             <Popup>
               <div style={{ color: '#0B0D14', padding: '4px', fontFamily: 'Inter, sans-serif' }}>
-                <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>{poi.name}</div>
-                <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: 2 }}>{poi.description}</div>
+                <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>{feat.name}</div>
+                <div style={{ fontSize: '0.74rem', color: '#475569', marginTop: 2 }}>{feat.description}</div>
+                <div style={{ fontSize: '0.68rem', color: '#6366f1', fontWeight: 700, marginTop: 4, textTransform: 'uppercase' }}>
+                  OSM Verified Entity ({feat.type.replace('_', ' ')})
+                </div>
               </div>
             </Popup>
           </Marker>

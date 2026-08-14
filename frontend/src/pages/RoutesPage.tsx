@@ -9,6 +9,7 @@ import type { RouteOptionData } from '../mock/delhiRouteData';
 import { apiFetch } from '../utils';
 import { fetchOSRMRealRoutes } from '../services/osrmRouting';
 import { searchGeocodingNominatim, type GeocodingResult } from '../services/geocoding';
+import { fetchEnvironmentalSafetyData, type EnvironmentalSafetyFeature } from '../services/overpassEnvironmentalData';
 
 export default function RoutesPage() {
   const navigate = useNavigate();
@@ -35,6 +36,10 @@ export default function RoutesPage() {
   const [isOSRMActive, setIsOSRMActive] = useState(false);
   const [routingError, setRoutingError] = useState<string | null>(null);
 
+  // Environmental Safety Features from Overpass API
+  const [environmentalFeatures, setEnvironmentalFeatures] = useState<EnvironmentalSafetyFeature[]>([]);
+  const [isLoadingOverpass, setIsLoadingOverpass] = useState(false);
+
   const [isRerouting, setIsRerouting] = useState(false);
   const [searchQuery, setSearchQuery] = useState(destination.address);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -59,6 +64,18 @@ export default function RoutesPage() {
         setRoutes(result.routes);
         setSelectedRouteId(result.routes[0].id);
         setIsOSRMActive(true);
+
+        // Fetch real Overpass environmental safety data for the active route
+        setIsLoadingOverpass(true);
+        fetchEnvironmentalSafetyData(result.routes[0].coordinates)
+          .then(summary => {
+            if (isMounted) {
+              setEnvironmentalFeatures(summary.features);
+            }
+          })
+          .finally(() => {
+            if (isMounted) setIsLoadingOverpass(false);
+          });
       } else {
         // Graceful fallback to static demo corridor if OSRM is unreachable
         console.log('[SafeSphere] Using cached road network fallback');
@@ -75,6 +92,16 @@ export default function RoutesPage() {
     loadRoadRoutes();
     return () => { isMounted = false; };
   }, [origin.lat, origin.lng, destination.lat, destination.lng]);
+
+  // ── When active route changes, update Overpass features ───────────────────
+  useEffect(() => {
+    const active = routes.find(r => r.id === selectedRouteId);
+    if (active && active.coordinates.length > 0) {
+      fetchEnvironmentalSafetyData(active.coordinates).then(summary => {
+        setEnvironmentalFeatures(summary.features);
+      });
+    }
+  }, [selectedRouteId, routes]);
 
   // ── Real Nominatim Geocoding with 450ms Debounce ─────────────────────────
   useEffect(() => {
@@ -333,8 +360,7 @@ export default function RoutesPage() {
             onSelectRoute={id => setSelectedRouteId(id)}
             origin={origin}
             destination={destination}
-            pois={DELHI_SAFETY_POIS}
-            showSafetyZones={true}
+            environmentalFeatures={environmentalFeatures}
           />
         </div>
 
