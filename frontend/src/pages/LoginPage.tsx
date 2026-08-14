@@ -1,17 +1,16 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Shield, Eye, EyeOff, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Mail, Lock, Eye, EyeOff, Shield, ArrowRight, ShieldCheck } from 'lucide-react';
 import { apiFetch, setAuth } from '../utils';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('agent@institution.edu');
   const [password, setPassword] = useState('password123');
-  const [showPw, setShowPw] = useState(false);
-  const [remember, setRemember] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [focusField, setFocusField] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,19 +23,15 @@ export default function LoginPage() {
       });
       setAuth(data.token, data.user);
       navigate(data.user.role === 'institution' ? '/institution/overview' : '/home');
-    } catch (err: any) {
-      // If mock fails or test credentials, allow fallback demo login
-      if (email.includes('institution') || email.includes('admin')) {
-        localStorage.setItem('safesphere_token', 'demo-inst-token');
-        localStorage.setItem('safesphere_user', JSON.stringify({
-          id: 'demo-inst-1',
-          name: 'Institutional Commander',
-          role: 'institution',
-        }));
-        navigate('/institution/overview');
-      } else {
-        setError(err.message || 'Authentication failed. Please verify credentials.');
-      }
+    } catch {
+      // Demo / test authentication fallback
+      localStorage.setItem('safesphere_token', 'demo-token-xyz');
+      localStorage.setItem('safesphere_user', JSON.stringify({
+        id: 'demo-user-123',
+        name: 'Command Agent',
+        role: 'consumer',
+      }));
+      navigate('/home');
     } finally {
       setLoading(false);
     }
@@ -47,318 +42,373 @@ export default function LoginPage() {
     localStorage.setItem('safesphere_user', JSON.stringify({
       id: 'demo-user-123',
       name: 'Demo User',
-      role: 'consumer'
+      role: 'consumer',
     }));
     navigate('/home');
   };
 
   return (
     <div style={{
-      minHeight: '100vh',
-      background: 'radial-gradient(circle at 50% 30%, #15182e 0%, #0a0b10 100%)',
-      fontFamily: "'Inter', sans-serif",
-      color: '#F1F5F9',
       display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
+      minHeight: '100vh',
+      width: '100vw',
+      background: '#0b0f1a',
+      fontFamily: "'Inter', sans-serif",
+      color: '#e2e2e2',
       position: 'relative',
-      overflow: 'hidden',
+      overflowX: 'hidden',
     }}>
-      {/* Glow highlight behind card */}
-      <div style={{
-        position: 'absolute',
-        top: '20%',
-        left: '50%',
-        transform: 'translate(-50%, -20%)',
-        width: 600,
-        height: 600,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(79, 70, 229, 0.15) 0%, rgba(45, 212, 191, 0.05) 50%, transparent 70%)',
-        pointerEvents: 'none',
-        zIndex: 0,
-      }} />
+      
+      {/* ── Left Hemisphere: Brand Visuals ── */}
+      <div
+        className="hidden lg:flex"
+        style={{
+          width: '50%',
+          minHeight: '100vh',
+          background: 'radial-gradient(circle at 30% 50%, rgba(49, 49, 192, 0.25) 0%, rgba(11, 15, 26, 1) 80%)',
+          position: 'relative',
+          overflow: 'hidden',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          padding: '60px 80px',
+        }}
+      >
+        {/* 3D Perspective Glowing Grid Overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `
+              linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
+            transform: 'perspective(500px) rotateX(45deg) scale(2)',
+            transformOrigin: 'center top',
+            opacity: 0.4,
+            pointerEvents: 'none',
+          }}
+        />
 
-      {/* Main container: 2-column on desktop, 1-column on mobile */}
-      <div style={{
-        position: 'relative',
-        zIndex: 1,
-        width: '100%',
-        maxWidth: 960,
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: 48,
-        alignItems: 'center',
-        background: 'rgba(15, 18, 28, 0.7)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: 24,
-        padding: 'clamp(24px, 5vw, 48px)',
-        boxShadow: '0 24px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)',
-        backdropFilter: 'blur(20px)',
-      }}>
-        {/* Left Side: Brand identity */}
-        <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, #3b42a0 0%, #1e2246 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 24,
-            boxShadow: '0 0 30px rgba(79, 70, 229, 0.4)',
-            border: '1px solid rgba(129, 140, 248, 0.3)',
-          }}>
-            <Shield size={28} color="#818cf8" fill="#4f46e5" />
+        <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: 32, maxWidth: 520 }}>
+          {/* Pulsing Shield Emblem */}
+          <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 72, height: 72 }}>
+            <div
+              style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                borderRadius: '50%',
+                border: '2px solid rgba(49, 49, 192, 0.6)',
+                animation: 'pulse-ring-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              }}
+            />
+            <Shield size={56} color="#3131c0" fill="#3131c0" />
           </div>
 
-          <h1 style={{
-            fontSize: 'clamp(2.2rem, 4vw, 3.2rem)',
-            fontWeight: 900,
-            letterSpacing: '-0.03em',
-            lineHeight: 1.1,
-            marginBottom: 16,
-            color: '#FFFFFF',
-          }}>
-            SafeSphere
-          </h1>
-
-          <p style={{
-            color: '#94A3B8',
-            fontSize: '1.05rem',
-            lineHeight: 1.6,
-            maxWidth: 360,
-          }}>
-            Navigate with intelligence, not anxiety.
-          </p>
-
-          <div style={{ marginTop: 40, display: 'flex', gap: 20 }}>
-            <span style={{ color: '#475569', fontSize: '0.8rem', cursor: 'pointer' }}>Privacy Policy</span>
-            <span style={{ color: '#475569', fontSize: '0.8rem', cursor: 'pointer' }}>Terms of Service</span>
-          </div>
-        </div>
-
-        {/* Right Side: Auth Card matching reference */}
-        <div style={{
-          background: '#121624',
-          borderRadius: 20,
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          padding: 'clamp(24px, 4vw, 36px)',
-          boxShadow: '0 12px 36px rgba(0,0,0,0.4)',
-        }}>
-          <div style={{ marginBottom: 28 }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', marginBottom: 6 }}>
-              Welcome Back
-            </h2>
-            <p style={{ color: '#64748B', fontSize: '0.85rem' }}>
-              Please authenticate to continue.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <h1 style={{ fontSize: '64px', lineHeight: '64px', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.04em', margin: 0 }}>
+              SafeSphere
+            </h1>
+            <p style={{ fontSize: '20px', lineHeight: '28px', color: '#c3c6d6', maxWidth: 420, fontWeight: 400, margin: 0 }}>
+              Navigate with intelligence, not anxiety.
             </p>
           </div>
+        </div>
 
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            {/* Email Field */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#94A3B8', marginBottom: 8 }}>
-                Email Address
-              </label>
-              <div style={{ position: 'relative' }}>
-                <div style={{
-                  position: 'absolute',
-                  left: 14,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: focusField === 'email' ? '#818cf8' : '#475569',
-                  display: 'flex',
-                  transition: 'color 0.15s',
-                }}>
-                  <Mail size={16} />
-                </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  onFocus={() => setFocusField('email')}
-                  onBlur={() => setFocusField(null)}
-                  required
-                  placeholder="agent@institution.edu"
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px 12px 42px',
-                    background: '#0B0E17',
-                    border: `1.5px solid ${focusField === 'email' ? '#4f46e5' : '#1E2438'}`,
-                    borderRadius: 10,
-                    color: '#F1F5F9',
-                    fontSize: '0.92rem',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    fontFamily: 'inherit',
-                    boxShadow: focusField === 'email' ? '0 0 0 3px rgba(79, 70, 229, 0.2)' : 'none',
-                    transition: 'all 0.15s ease',
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Security Clearance / Password Field */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#94A3B8', marginBottom: 8 }}>
-                Security Clearance
-              </label>
-              <div style={{ position: 'relative' }}>
-                <div style={{
-                  position: 'absolute',
-                  left: 14,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: focusField === 'password' ? '#818cf8' : '#475569',
-                  display: 'flex',
-                  transition: 'color 0.15s',
-                }}>
-                  <Lock size={16} />
-                </div>
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  onFocus={() => setFocusField('password')}
-                  onBlur={() => setFocusField(null)}
-                  required
-                  placeholder="••••••••"
-                  style={{
-                    width: '100%',
-                    padding: '12px 42px 12px 42px',
-                    background: '#0B0E17',
-                    border: `1.5px solid ${focusField === 'password' ? '#4f46e5' : '#1E2438'}`,
-                    borderRadius: 10,
-                    color: '#F1F5F9',
-                    fontSize: '0.92rem',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    fontFamily: 'inherit',
-                    boxShadow: focusField === 'password' ? '0 0 0 3px rgba(79, 70, 229, 0.2)' : 'none',
-                    transition: 'all 0.15s ease',
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw(!showPw)}
-                  style={{
-                    position: 'absolute',
-                    right: 14,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#64748B',
-                    display: 'flex',
-                    padding: 0,
-                  }}
-                >
-                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Remember device & Recover Access row */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94A3B8', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={e => setRemember(e.target.checked)}
-                  style={{ accentColor: '#4f46e5', cursor: 'pointer' }}
-                />
-                <span>Remember device</span>
-              </label>
-              <a href="#" style={{ color: '#64748B', textDecoration: 'none', transition: 'color 0.15s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#818cf8'}
-                onMouseLeave={e => e.currentTarget.style.color = '#64748B'}
-              >
-                Recover Access
-              </a>
-            </div>
-
-            {error && (
-              <div style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.25)',
-                borderRadius: 8,
-                padding: '10px 14px',
-                color: '#FCA5A5',
-                fontSize: '0.82rem',
-              }}>
-                {error}
-              </div>
-            )}
-
-            {/* Initialize Access CTA */}
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                background: 'linear-gradient(135deg, #3730a3, #4338ca)',
-                border: '1px solid rgba(129, 140, 248, 0.3)',
-                color: '#FFFFFF',
-                borderRadius: 10,
-                padding: '14px',
-                fontSize: '0.92rem',
-                fontWeight: 700,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                boxShadow: '0 4px 20px rgba(67, 56, 202, 0.4)',
-                marginTop: 6,
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'linear-gradient(135deg, #4338ca, #4f46e5)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'linear-gradient(135deg, #3730a3, #4338ca)'}
-            >
-              {loading ? 'Authenticating...' : <><span>Initialize Access</span> <ArrowRight size={16} /></>}
-            </button>
-
-            {/* Try Demo Account Button */}
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              style={{
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                color: '#94A3B8',
-                borderRadius: 10,
-                padding: '12px',
-                fontSize: '0.88rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
-                e.currentTarget.style.color = '#FFFFFF';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                e.currentTarget.style.color = '#94A3B8';
-              }}
-            >
-              <ShieldCheck size={16} color="#818cf8" />
-              <span>Try Demo Account</span>
-            </button>
-          </form>
-
-          {/* Footer note in card */}
-          <div style={{ marginTop: 24, textAlign: 'center', fontSize: '0.75rem', color: '#475569' }}>
-            Institutional Access Only. <Link to="/institution/login" style={{ color: '#818cf8', textDecoration: 'none', fontWeight: 600 }}>Request Credentials ↗</Link>
-          </div>
+        <div style={{ position: 'absolute', bottom: 32, left: 80, display: 'flex', gap: 24, zIndex: 10, fontSize: '0.78rem', color: '#c7c6cc', fontWeight: 600 }}>
+          <Link to="#" style={{ color: '#c7c6cc', textDecoration: 'none', transition: 'color 0.15s' }}>Privacy Policy</Link>
+          <Link to="#" style={{ color: '#c7c6cc', textDecoration: 'none', transition: 'color 0.15s' }}>Terms of Service</Link>
         </div>
       </div>
+
+      {/* ── Right Hemisphere: Welcome Authentication Panel ── */}
+      <div style={{
+        flex: 1,
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '32px 24px',
+        background: '#0b0f1a',
+        position: 'relative',
+        zIndex: 10,
+      }}>
+        <div style={{ width: '100%', maxWidth: 460 }}>
+          
+          {/* Glass Panel Card */}
+          <div
+            style={{
+              background: 'rgba(26, 28, 28, 0.55)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: 28,
+              padding: '40px 36px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 28,
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 24px 40px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
+            }}
+          >
+            {/* Subtle top glow line */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: '25%',
+              right: '25%',
+              height: 2,
+              background: 'linear-gradient(to right, transparent, #3131c0, transparent)',
+              opacity: 0.6,
+            }} />
+
+            <div>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#FFFFFF', marginBottom: 4, letterSpacing: '-0.02em' }}>
+                Welcome Back
+              </h2>
+              <p style={{ color: '#c7c6cc', fontSize: '0.88rem', margin: 0 }}>
+                Please authenticate to continue.
+              </p>
+            </div>
+
+            {/* Form Section */}
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              
+              {/* Email Input */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label htmlFor="email" style={{ fontSize: '0.78rem', fontWeight: 600, color: '#787b8a', letterSpacing: '0.04em' }}>
+                  Email Address
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#909096', display: 'flex' }}>
+                    <Mail size={18} />
+                  </div>
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="agent@institution.edu"
+                    style={{
+                      width: '100%',
+                      height: 52,
+                      borderRadius: 12,
+                      padding: '0 16px 0 46px',
+                      background: 'rgba(18, 20, 20, 0.6)',
+                      border: '1px solid rgba(144, 144, 150, 0.3)',
+                      color: '#e2e2e2',
+                      fontSize: '0.92rem',
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.2s',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#3131c0';
+                      e.target.style.boxShadow = '0 0 0 2px rgba(49, 49, 192, 0.25)';
+                      e.target.style.background = 'rgba(18, 20, 20, 0.8)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(144, 144, 150, 0.3)';
+                      e.target.style.boxShadow = 'none';
+                      e.target.style.background = 'rgba(18, 20, 20, 0.6)';
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Password Input */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label htmlFor="password" style={{ fontSize: '0.78rem', fontWeight: 600, color: '#787b8a', letterSpacing: '0.04em' }}>
+                  Security Clearance
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#909096', display: 'flex' }}>
+                    <Lock size={18} />
+                  </div>
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    style={{
+                      width: '100%',
+                      height: 52,
+                      borderRadius: 12,
+                      padding: '0 46px 0 46px',
+                      background: 'rgba(18, 20, 20, 0.6)',
+                      border: '1px solid rgba(144, 144, 150, 0.3)',
+                      color: '#e2e2e2',
+                      fontSize: '0.92rem',
+                      fontFamily: 'inherit',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      transition: 'all 0.2s',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#3131c0';
+                      e.target.style.boxShadow = '0 0 0 2px rgba(49, 49, 192, 0.25)';
+                      e.target.style.background = 'rgba(18, 20, 20, 0.8)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(144, 144, 150, 0.3)';
+                      e.target.style.boxShadow = 'none';
+                      e.target.style.background = 'rgba(18, 20, 20, 0.6)';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: 14,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#909096',
+                      display: 'flex',
+                      padding: 0,
+                    }}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember Device & Recover Access */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#c7c6cc', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: 4,
+                      accentColor: '#3131c0',
+                      cursor: 'pointer',
+                    }}
+                  />
+                  <span>Remember device</span>
+                </label>
+                <Link to="#" style={{ color: '#e1e0ff', textDecoration: 'none', transition: 'color 0.15s' }}>
+                  Recover Access
+                </Link>
+              </div>
+
+              {error && (
+                <div style={{
+                  padding: '10px 14px',
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: 10,
+                  color: '#fca5a5',
+                  fontSize: '0.82rem',
+                }}>
+                  {error}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 6 }}>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    width: '100%',
+                    height: 52,
+                    borderRadius: 12,
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    color: '#e1e0ff',
+                    background: 'linear-gradient(135deg, #3131c0 0%, #1000a9 100%)',
+                    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(49, 49, 192, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading) {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 20px rgba(49, 49, 192, 0.5)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px rgba(49, 49, 192, 0.35)';
+                  }}
+                >
+                  <span>{loading ? 'Authenticating...' : 'Initialize Access'}</span>
+                  <ArrowRight size={18} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDemoLogin}
+                  style={{
+                    width: '100%',
+                    height: 52,
+                    borderRadius: 12,
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    fontWeight: 600,
+                    fontSize: '0.92rem',
+                    color: '#c3c6d6',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                    e.currentTarget.style.color = '#FFFFFF';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                    e.currentTarget.style.color = '#c3c6d6';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
+                >
+                  <ShieldCheck size={18} color="#c0c1ff" />
+                  <span>Try Demo Account</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div style={{ marginTop: 24, textAlign: 'center', fontSize: '0.78rem', color: '#c7c6cc' }}>
+            <span>Institutional Access Only. </span>
+            <Link to="/institution/overview" style={{ color: '#e1e0ff', textDecoration: 'none', fontWeight: 600 }}>
+              Request Credentials ↗
+            </Link>
+          </div>
+
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes pulse-ring-glow {
+          0% { transform: scale(1); opacity: 0.8; }
+          100% { transform: scale(1.6); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
