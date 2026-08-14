@@ -8,6 +8,7 @@ import { DELHI_DEMO_ROUTES, DELHI_SAFETY_POIS } from '../mock/delhiRouteData';
 import type { RouteOptionData } from '../mock/delhiRouteData';
 import { apiFetch } from '../utils';
 import { fetchOSRMRealRoutes } from '../services/osrmRouting';
+import { searchGeocodingNominatim, type GeocodingResult } from '../services/geocoding';
 
 export default function RoutesPage() {
   const navigate = useNavigate();
@@ -37,7 +38,8 @@ export default function RoutesPage() {
   const [isRerouting, setIsRerouting] = useState(false);
   const [searchQuery, setSearchQuery] = useState(destination.address);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearchingGeocode, setIsSearchingGeocode] = useState(false);
+  const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
 
   // ── Fetch Real Turn-by-Turn Road Routes via OSRM ─────────────────────────
   useEffect(() => {
@@ -74,36 +76,36 @@ export default function RoutesPage() {
     return () => { isMounted = false; };
   }, [origin.lat, origin.lng, destination.lat, destination.lng]);
 
-  // Search autocomplete
+  // ── Real Nominatim Geocoding with 450ms Debounce ─────────────────────────
   useEffect(() => {
     if (!searchQuery.trim() || searchQuery === destination.address) {
       setSearchResults([]);
+      setIsSearchingGeocode(false);
       return;
     }
+
+    setIsSearchingGeocode(true);
     const timer = setTimeout(async () => {
       try {
-        const data = await apiFetch(`/routes/search?q=${encodeURIComponent(searchQuery)}`);
-        setSearchResults(data);
-      } catch {
-        // Fallback demo search results
-        setSearchResults([
-          { id: 'loc-1', address: 'Connaught Place, New Delhi', lat: 28.6315, lng: 77.2167 },
-          { id: 'loc-2', address: 'India Gate, New Delhi', lat: 28.6129, lng: 77.2295 },
-          { id: 'loc-3', address: 'Rajouri Garden, New Delhi', lat: 28.6473, lng: 77.1221 },
-          { id: 'loc-4', address: 'Saket Select CityWalk, New Delhi', lat: 28.5283, lng: 77.2185 },
-        ].filter(d => d.address.toLowerCase().includes(searchQuery.toLowerCase())));
+        const results = await searchGeocodingNominatim(searchQuery);
+        setSearchResults(results);
+      } catch (err) {
+        console.error('Nominatim search failed:', err);
+      } finally {
+        setIsSearchingGeocode(false);
       }
-    }, 250);
+    }, 450); // 450ms compliant rate-limit debounce
+
     return () => clearTimeout(timer);
   }, [searchQuery, destination.address]);
 
-  const handleSelectDestination = (destItem: any) => {
+  const handleSelectDestination = (destItem: GeocodingResult) => {
     setDestination({
-      lat: destItem.latitude || destItem.lat || 28.6129,
-      lng: destItem.longitude || destItem.lng || 77.2295,
-      address: destItem.address || destItem.name,
+      lat: destItem.lat,
+      lng: destItem.lng,
+      address: destItem.name || destItem.address.split(',')[0],
     });
-    setSearchQuery(destItem.address || destItem.name);
+    setSearchQuery(destItem.name || destItem.address.split(',')[0]);
     setIsSearchOpen(false);
   };
 
@@ -192,10 +194,14 @@ export default function RoutesPage() {
               boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
               backdropFilter: 'blur(12px)',
             }}>
-              <Search size={16} color="#818cf8" />
+              {isSearchingGeocode ? (
+                <Loader2 size={16} className="animate-spin text-indigo-400 shrink-0" />
+              ) : (
+                <Search size={16} color="#818cf8" className="shrink-0" />
+              )}
               <input
                 type="text"
-                placeholder="Search Delhi destination..."
+                placeholder="Search any destination in Delhi NCR..."
                 value={searchQuery}
                 onFocus={() => setIsSearchOpen(true)}
                 onChange={e => {
@@ -214,7 +220,7 @@ export default function RoutesPage() {
               />
             </div>
 
-            {/* Autocomplete Dropdown */}
+            {/* Nominatim Autocomplete Dropdown */}
             {isSearchOpen && searchResults.length > 0 && (
               <div style={{
                 position: 'absolute',
@@ -227,6 +233,8 @@ export default function RoutesPage() {
                 overflow: 'hidden',
                 boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
                 zIndex: 1001,
+                maxHeight: 280,
+                overflowY: 'auto',
               }}>
                 {searchResults.map((res, i) => (
                   <div
@@ -241,13 +249,17 @@ export default function RoutesPage() {
                       borderBottom: i < searchResults.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
                       fontSize: '0.82rem',
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(79, 70, 229, 0.15)'}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(79, 70, 229, 0.2)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <MapPin size={14} color="#818cf8" />
-                    <div>
-                      <div style={{ color: '#FFFFFF', fontWeight: 600 }}>{res.address || res.name}</div>
-                      {res.zone && <div style={{ color: '#64748B', fontSize: '0.72rem' }}>{res.zone}</div>}
+                    <MapPin size={16} color="#818cf8" className="shrink-0" />
+                    <div style={{ overflow: 'hidden' }}>
+                      <div style={{ color: '#FFFFFF', fontWeight: 600, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                        {res.name}
+                      </div>
+                      <div style={{ color: '#64748B', fontSize: '0.72rem', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                        {res.address}
+                      </div>
                     </div>
                   </div>
                 ))}

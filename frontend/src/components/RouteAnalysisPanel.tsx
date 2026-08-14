@@ -211,7 +211,10 @@ export function RouteAnalysisPanel({
           Route Analysis
         </h1>
         <p style={{ fontSize: '0.82rem', color: '#64748B', marginTop: 4 }}>
-          Comparing 3 intelligent pathways to <span style={{ color: '#94A3B8', fontWeight: 600 }}>{destinationAddress.split(',')[0]}</span>.
+          {routes.length > 1
+            ? `Comparing ${routes.length} pedestrian pathways to `
+            : 'Optimal pedestrian route to '}
+          <span style={{ color: '#94A3B8', fontWeight: 600 }}>{destinationAddress.split(',')[0]}</span>.
         </p>
       </div>
 

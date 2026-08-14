@@ -123,7 +123,7 @@ export const DELHI_DEMO_ROUTES: RouteOptionData[] = [
 ];
 
 export const DELHI_SAFETY_POIS: SafetyZonePOI[] = [
-  { id: 'poi-1', name: 'Connaught Place Police Station', type: 'police', lat: 28.6325, lng: 27.2185, description: '24/7 Command Unit' },
+  { id: 'poi-1', name: 'Connaught Place Police Station', type: 'police', lat: 28.6325, lng: 77.2185, description: '24/7 Command Unit' },
   { id: 'poi-2', name: 'Dr. RML Hospital Emergency', type: 'hospital', lat: 28.6245, lng: 77.2025, description: 'Level 1 Trauma Center' },
   { id: 'poi-3', name: 'Janpath Safe Haven & Kiosk', type: 'safe_haven', lat: 28.6225, lng: 77.2198, description: 'Safe Corridor Staffed Post' },
   { id: 'poi-4', name: 'Rajiv Chowk Metro High Footfall Area', type: 'high_footfall', lat: 28.6328, lng: 77.2190, description: 'Dense Pedestrian Transit' },
