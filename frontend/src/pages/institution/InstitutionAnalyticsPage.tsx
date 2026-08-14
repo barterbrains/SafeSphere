@@ -14,23 +14,23 @@ export default function InstitutionAnalyticsPage() {
         // Fallback demo data if backend offline
         setData({
           summary: {
-            totalIncidents: 42,
-            resolvedRate: 98,
-            avgResponseTime: '3.4 min',
-            mostCommonType: 'Low Lighting',
+            totalIncidents: 38,
+            resolvedRate: 98.4,
+            avgResponseTime: '3.2 min',
+            mostCommonType: 'Low Street Lighting',
           },
           incidentTrend: [
-            { month: 'Nov', incidents: 14, safeScore: 68 },
-            { month: 'Dec', incidents: 10, safeScore: 72 },
-            { month: 'Jan', incidents: 8, safeScore: 78 },
-            { month: 'Feb', incidents: 5, safeScore: 84 },
-            { month: 'Mar', incidents: 3, safeScore: 89 },
+            { month: 'Nov', incidents: 14, safeScore: 72 },
+            { month: 'Dec', incidents: 11, safeScore: 76 },
+            { month: 'Jan', incidents: 8, safeScore: 81 },
+            { month: 'Feb', incidents: 5, safeScore: 86 },
+            { month: 'Mar', incidents: 4, safeScore: 90 },
             { month: 'Apr', incidents: 2, safeScore: 94 },
           ],
           topRiskLocations: [
-            { name: 'Sector 7G Transit Point', zone: 'West District', incidents: 12, avgSafeScore: 48 },
-            { name: 'North Corridor Underpass', zone: 'North Sector', incidents: 9, avgSafeScore: 52 },
-            { name: 'Commercial Square Alley', zone: 'Central Zone', incidents: 6, avgSafeScore: 64 },
+            { name: 'Subhash Nagar Unlit Cut-through', zone: 'West Delhi Sector', incidents: 12, avgSafeScore: 48 },
+            { name: 'Tagore Garden Service Lane', zone: 'West Delhi District', incidents: 9, avgSafeScore: 54 },
+            { name: 'Kasturba Gandhi Marg Underpass', zone: 'Central Delhi', incidents: 5, avgSafeScore: 65 },
           ],
         });
       })
