@@ -3,482 +3,583 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { InstitutionNav } from './InstitutionNav';
 import {
-  Building2, Shield, MapPin, Globe, Phone, Mail,
-  Users, CheckCircle2, ShieldCheck, Edit3, Award,
-  Clock, AlertTriangle, Radio, Car, Navigation,
-  FileText, X, Save, Sparkles, Landmark, BadgeCheck,
-  Hospital, ShieldAlert
+  Building2, Shield, MapPin, Globe, Users,
+  CheckCircle2, ShieldCheck, Edit3, Award,
+  Clock, AlertTriangle, Radio, Landmark,
+  X, Save, FileText, Check, Info, Lock,
+  ShieldAlert, Hospital, ChevronRight, Phone
 } from 'lucide-react';
 
-interface InstituteProfileData {
+interface InstitutionProfile {
   name: string;
+  shortName: string;
   type: string;
-  domain: string;
-  address: string;
   affiliation: string;
-  licenseNumber: string;
-  establishmentYear: string;
-  totalUsers: string;
-  csoName: string;
-  csoRole: string;
-  hotlinePhone: string;
-  csoEmail: string;
-  nearestPoliceStation: string;
-  policeDistance: string;
-  policePhone: string;
-  nearestHospital: string;
-  hospitalDistance: string;
-  hospitalPhone: string;
-  fireStation: string;
-  geofenceRadius: string;
-  patrolFleetCount: number;
+  location: string;
+  address: string;
+  domain: string;
+  institutionId: string;
+  administrator: string;
+  authorizedStaffCount: number;
+  safetyScore: number;
+  riskLevel: 'Low' | 'Moderate' | 'High' | 'Critical';
+  monitoredZones: number;
+  safeZones: number;
+  highRiskZones: number;
+  insufficientDataZones: number;
+  activeIncidents: number;
+  activeAlerts: number;
+  dataCoverage: number;
+  totalArea: string;
+  lastUpdated: string;
+  lastRefresh: string;
 }
 
 export default function InstitutionProfilePage() {
   const navigate = useNavigate();
-  const { user, profile: authProfile, isDemo } = useAuth();
+  const { user, isDemo } = useAuth();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
 
-  // ── College / Institute Profile Details ──
-  const [institute, setInstitute] = useState<InstituteProfileData>({
+  // ── Centralized Institution Profile Object (Demo/Configurable) ──
+  const [profile, setProfile] = useState<InstitutionProfile>({
     name: 'Guru Tegh Bahadur Institute of Technology (GTBIT)',
-    type: 'Engineering & Technology University Campus',
-    domain: 'gtbit.edu.in',
-    address: 'G-8 Area, Rajouri Garden, New Delhi, Delhi 110064',
+    shortName: 'GTBIT',
+    type: 'Engineering & Technology Institution',
     affiliation: 'Guru Gobind Singh Indraprastha University (GGSIPU)',
-    licenseNumber: 'AICTE-DEL-ENG-2024 / ISO 27001 Safety Certified',
-    establishmentYear: '1999',
-    totalUsers: '4,850 Enrolled Students, Faculty & Staff',
-    csoName: 'Prof. Harminder Singh',
-    csoRole: 'Chief Security Officer & Campus Proctor',
-    hotlinePhone: '+91 (11) 2852-1234 / Ext. 911',
-    csoEmail: 'security.command@gtbit.edu.in',
-    nearestPoliceStation: 'Rajouri Garden Police Station (West District)',
-    policeDistance: '450 meters (3 min PCR dispatch)',
-    policePhone: '112 / +91 (11) 2519-1234',
-    nearestHospital: 'ESI Postgraduate Medical Institute & Hospital',
-    hospitalDistance: '1.2 km (5 min ambulance transit)',
-    hospitalPhone: '102 / +91 (11) 2545-2000',
-    fireStation: 'Janakpuri Fire Division (Station #14) · 2.1 km',
-    geofenceRadius: '800 meters Active Radius',
-    patrolFleetCount: 4,
+    location: 'New Delhi, India',
+    address: 'G-8 Area, Rajouri Garden, New Delhi, Delhi 110064',
+    domain: 'gtbit.edu.in',
+    institutionId: 'INST-DEL-GTBIT-01',
+    administrator: 'Campus Safety Operations Desk (admin@gtbit.edu.in)',
+    authorizedStaffCount: 4,
+    safetyScore: 76,
+    riskLevel: 'Moderate',
+    monitoredZones: 24,
+    safeZones: 18,
+    highRiskZones: 4,
+    insufficientDataZones: 2,
+    activeIncidents: 3,
+    activeAlerts: 2,
+    dataCoverage: 82,
+    totalArea: '~1.8 km² Campus & Surrounding Corridor',
+    lastUpdated: 'Today, Live Sync',
+    lastRefresh: 'Real-time (OSM, NCRB & User Reports)',
   });
 
   // Edit form state
-  const [editForm, setEditForm] = useState<InstituteProfileData>({ ...institute });
+  const [editForm, setEditForm] = useState({
+    name: profile.name,
+    type: profile.type,
+    affiliation: profile.affiliation,
+    location: profile.location,
+    address: profile.address,
+    domain: profile.domain,
+    administrator: profile.administrator,
+  });
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    setInstitute({ ...editForm });
+    setProfile(prev => ({
+      ...prev,
+      name: editForm.name,
+      type: editForm.type,
+      affiliation: editForm.affiliation,
+      location: editForm.location,
+      address: editForm.address,
+      domain: editForm.domain,
+      administrator: editForm.administrator,
+      lastUpdated: 'Just now',
+    }));
     setIsEditModalOpen(false);
-    setSaveToast('Institute Profile updated successfully.');
+    setSaveToast('Institution configuration updated successfully.');
     setTimeout(() => setSaveToast(null), 3500);
   };
 
   return (
-    <div className="flex h-screen overflow-hidden text-[15px] font-['Inter',sans-serif] bg-[#0a0a12] text-[#e2e2e2]">
+    <div className="flex h-screen overflow-hidden text-[14px] font-['Inter',sans-serif] bg-[#0a0a12] text-[#e2e2e2]">
       {/* Institutional Left Sidebar */}
       <InstitutionNav />
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-[#0a0a12] p-6 lg:p-10 flex flex-col gap-6">
+      {/* Main Content Scrollable Area */}
+      <main className="flex-1 overflow-y-auto bg-[#0a0a12] p-6 lg:p-8 flex flex-col gap-6">
         {/* Toast Notification */}
         {saveToast && (
-          <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 rounded-xl px-4 py-3 text-sm flex items-center justify-between shadow-lg animate-in fade-in duration-200">
+          <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 rounded-xl px-4 py-3 text-xs flex items-center justify-between shadow-lg animate-in fade-in duration-200">
             <div className="flex items-center gap-2">
-              <CheckCircle2 size={18} className="text-emerald-400" />
+              <CheckCircle2 size={16} className="text-emerald-400" />
               <span>{saveToast}</span>
             </div>
             <button onClick={() => setSaveToast(null)} className="text-emerald-300/60 hover:text-emerald-200 bg-transparent border-none cursor-pointer">
-              <X size={16} />
+              <X size={15} />
             </button>
           </div>
         )}
 
-        {/* ── Top Header Banner: College / Organization Profile ── */}
-        <div className="w-full bg-[#121420] border border-white/10 rounded-2xl p-6 lg:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 relative z-10">
+        {/* ── 1. CLEAN INSTITUTION HEADER ── */}
+        <div className="bg-[#121420] border border-white/10 rounded-2xl p-6 relative overflow-hidden shadow-lg">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div className="flex items-start gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#4f46e5] to-[#312e81] border border-[#818cf8]/40 shadow-[0_0_24px_rgba(79,70,229,0.4)] flex items-center justify-center shrink-0">
-                <Building2 className="w-8 h-8 text-white" />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#4f46e5]/30 to-[#312e81]/40 border border-[#818cf8]/30 flex items-center justify-center shrink-0">
+                <Building2 className="w-7 h-7 text-[#c0c1ff]" />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight">
-                    {institute.name}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h1 className="text-xl lg:text-2xl font-bold text-white tracking-tight">
+                    {profile.name}
                   </h1>
-                  <span className="bg-[#3131c0]/40 text-[#c0c1ff] border border-[#818cf8]/40 px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wider uppercase flex items-center gap-1">
-                    <BadgeCheck size={13} className="text-indigo-300" />
-                    Verified Institution
+                  <span className="bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                    Demo Institution / Verified Demo
                   </span>
                 </div>
-                <p className="text-[#94a3b8] text-sm flex items-center gap-2 flex-wrap">
-                  <span className="text-indigo-300 font-semibold">{institute.type}</span>
+                <div className="flex items-center gap-3 text-xs text-[#94a3b8] flex-wrap mt-0.5">
+                  <span className="text-indigo-200/90 font-medium">{profile.type}</span>
                   <span className="text-white/20">•</span>
-                  <span>{institute.affiliation}</span>
+                  <span className="flex items-center gap-1">
+                    <MapPin size={12} className="text-red-400" />
+                    {profile.location}
+                  </span>
                   <span className="text-white/20">•</span>
-                  <span className="text-slate-400">Est. {institute.establishmentYear}</span>
-                </p>
-                <div className="flex items-center gap-4 text-xs text-[#94a3b8] mt-1 flex-wrap">
-                  <span className="flex items-center gap-1.5 text-indigo-300 font-medium bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
-                    <Globe size={13} />
-                    {institute.domain}
-                  </span>
-                  <span className="flex items-center gap-1.5 text-slate-300">
-                    <MapPin size={13} className="text-red-400" />
-                    {institute.address}
-                  </span>
+                  <span className="text-slate-400 font-mono text-[11px]">{profile.institutionId}</span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => {
-                setEditForm({ ...institute });
+                setEditForm({
+                  name: profile.name,
+                  type: profile.type,
+                  affiliation: profile.affiliation,
+                  location: profile.location,
+                  address: profile.address,
+                  domain: profile.domain,
+                  administrator: profile.administrator,
+                });
                 setIsEditModalOpen(true);
               }}
-              className="bg-indigo-600/20 hover:bg-indigo-600/30 text-white font-bold text-xs px-5 py-3 rounded-xl border border-indigo-500/40 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer shrink-0 self-start"
+              className="bg-white/5 hover:bg-white/10 text-white font-semibold text-xs px-4 py-2.5 rounded-xl border border-white/15 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 self-start md:self-center"
             >
-              <Edit3 size={15} className="text-indigo-400" />
-              <span>Edit Institute Details</span>
+              <Edit3 size={14} className="text-indigo-400" />
+              <span>Edit Institution Details</span>
             </button>
           </div>
-
-          {/* ── Key Institute Metrics ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/10">
-            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1">
-                Active Enrolled Users
-              </span>
-              <span className="text-xl font-black text-white">4,850</span>
-              <span className="text-[11px] text-emerald-400 font-semibold block mt-1">● Active Campus Coverage</span>
-            </div>
-
-            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1">
-                Patrol Escort Fleets
-              </span>
-              <span className="text-xl font-black text-indigo-300">{institute.patrolFleetCount} Vehicles</span>
-              <span className="text-[11px] text-[#94a3b8] font-medium block mt-1">GPS Telemetry Linked</span>
-            </div>
-
-            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1">
-                Campus Security Geofence
-              </span>
-              <span className="text-xl font-black text-white">{institute.geofenceRadius}</span>
-              <span className="text-[11px] text-emerald-400 font-medium block mt-1">24/7 Monitored</span>
-            </div>
-
-            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1">
-                Police Station Link
-              </span>
-              <span className="text-xl font-black text-red-400">450m</span>
-              <span className="text-[11px] text-[#94a3b8] font-medium block mt-1">Rajouri Garden PS</span>
-            </div>
-          </div>
         </div>
 
-        {/* ── 2-Column Institutional Information Grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Column 1: Organization & Campus Entity Info */}
-          <div className="bg-[#121420] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-5">
-            <div className="flex items-center gap-3 pb-3 border-b border-white/10">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                <Landmark size={20} />
+        {/* ── 2. TWO-COLUMN LAYOUT: ORGANIZATION DETAILS & SAFETY ADMINISTRATION ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Left Card: Organization Details */}
+          <div className="bg-[#121420] border border-white/10 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2 text-white font-semibold text-sm">
+                <Landmark size={16} className="text-indigo-400" />
+                <span>Organization Details</span>
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-white">Entity &amp; Campus Registration</h2>
-                <p className="text-xs text-[#94a3b8]">Official organizational credentials and accreditation</p>
-              </div>
+              <span className="text-[11px] text-[#94a3b8]">General Info</span>
             </div>
 
-            <div className="space-y-3.5 text-xs">
-              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 flex justify-between items-start">
-                <div>
-                  <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                    Legal Institution Name
-                  </span>
-                  <span className="text-white font-bold text-sm">{institute.name}</span>
-                </div>
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between items-start py-1 border-b border-white/5">
+                <span className="text-[#94a3b8]">Institution Name</span>
+                <span className="text-white font-medium text-right max-w-[60%]">{profile.name}</span>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                  <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                    Institution Category
-                  </span>
-                  <span className="text-white font-semibold">{institute.type}</span>
-                </div>
-
-                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                  <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                    University / Board Affiliation
-                  </span>
-                  <span className="text-white font-semibold">{institute.affiliation}</span>
-                </div>
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-[#94a3b8]">Institution Type</span>
+                <span className="text-white font-medium">{profile.type}</span>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                  <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                    License &amp; Accreditation ID
-                  </span>
-                  <span className="text-indigo-300 font-mono font-bold">{institute.licenseNumber}</span>
-                </div>
-
-                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                  <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                    Official Domain &amp; SSO
-                  </span>
-                  <span className="text-indigo-300 font-mono font-bold">{institute.domain}</span>
-                </div>
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-[#94a3b8]">University / Board Affiliation</span>
+                <span className="text-white font-medium text-right">{profile.affiliation}</span>
               </div>
-
-              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                  Registered Campus HQ Address
-                </span>
-                <span className="text-white font-medium flex items-center gap-1.5 mt-1">
-                  <MapPin size={14} className="text-red-400 shrink-0" />
-                  {institute.address}
-                </span>
+              <div className="flex justify-between items-start py-1 border-b border-white/5">
+                <span className="text-[#94a3b8]">Campus Location</span>
+                <span className="text-white font-medium text-right max-w-[60%]">{profile.address}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-[#94a3b8]">Website / Domain</span>
+                <span className="text-indigo-300 font-mono font-medium">{profile.domain}</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-[#94a3b8]">Institution Identifier</span>
+                <span className="text-white font-mono bg-white/5 px-2 py-0.5 rounded text-[11px]">{profile.institutionId}</span>
               </div>
             </div>
           </div>
 
-          {/* Column 2: Security Administration & Command Contacts */}
-          <div className="bg-[#121420] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-5">
-            <div className="flex items-center gap-3 pb-3 border-b border-white/10">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                <ShieldCheck size={20} />
+          {/* Right Card: Safety Administration */}
+          <div className="bg-[#121420] border border-white/10 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2 text-white font-semibold text-sm">
+                <ShieldCheck size={16} className="text-indigo-400" />
+                <span>Safety Administration</span>
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-white">Security Command Administration</h2>
-                <p className="text-xs text-[#94a3b8]">Chief Security Officer and active dispatch desks</p>
-              </div>
+              <span className="text-[11px] text-[#94a3b8]">Access &amp; Management</span>
             </div>
 
-            <div className="space-y-3.5 text-xs">
-              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 flex justify-between items-center">
-                <div>
-                  <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                    Chief Security Officer &amp; Proctor
-                  </span>
-                  <span className="text-white font-bold text-sm">{institute.csoName}</span>
-                  <span className="text-[#94a3b8] text-[11px] block mt-0.5">{institute.csoRole}</span>
-                </div>
-                <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase">
-                  ● On Duty
-                </span>
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between items-start py-1 border-b border-white/5">
+                <span className="text-[#94a3b8]">Safety Administrator</span>
+                <span className="text-white font-medium text-right max-w-[60%] truncate">{profile.administrator}</span>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                  <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                    24/7 Command Hotline
-                  </span>
-                  <span className="text-indigo-300 font-mono font-bold text-sm">{institute.hotlinePhone}</span>
-                </div>
-
-                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                  <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                    Official Security Email
-                  </span>
-                  <span className="text-white font-mono font-semibold truncate block">{institute.csoEmail}</span>
-                </div>
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-[#94a3b8]">Authorized Safety Staff</span>
+                <span className="text-white font-medium">{profile.authorizedStaffCount} Authorized Staff</span>
               </div>
-
-              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                  Night Escort &amp; Patrol Transit Service
-                </span>
-                <span className="text-white font-medium flex items-center gap-1.5 mt-1">
-                  <Clock size={14} className="text-indigo-400 shrink-0" />
-                  Active 6:00 PM – 6:00 AM (4 Mobile Escort PCR Vehicles)
-                </span>
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-[#94a3b8]">Active Safety Zones</span>
+                <span className="text-emerald-400 font-semibold">{profile.safeZones} Configured Safe Zones</span>
               </div>
-
-              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block mb-1">
-                  Fire &amp; Disaster Management Station
-                </span>
-                <span className="text-white font-medium flex items-center gap-1.5 mt-1">
-                  <ShieldAlert size={14} className="text-amber-400 shrink-0" />
-                  {institute.fireStation}
-                </span>
+              <div className="flex justify-between items-center py-1 border-b border-white/5">
+                <span className="text-[#94a3b8]">Active Alerts</span>
+                <span className="text-amber-300 font-semibold">{profile.activeAlerts} Active Broadcasts</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-[#94a3b8]">Last Safety Data Update</span>
+                <span className="text-[#94a3b8] font-mono text-[11px]">{profile.lastUpdated}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── Emergency First Responders Jurisdictions ── */}
-        <div className="bg-[#121420] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
-          <div className="flex items-center gap-3 pb-3 border-b border-white/10">
-            <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
-              <Radio size={20} />
-            </div>
+        {/* ── 3. CAMPUS SAFETY PROFILE (COMPACT KPI CARDS) ── */}
+        <div className="bg-[#121420] border border-white/10 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-white">Emergency First Responder Integrations</h2>
-              <p className="text-xs text-[#94a3b8]">Live dispatch channels linked to nearby emergency civic stations</p>
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Campus Safety Profile</h2>
+              <p className="text-xs text-[#94a3b8] mt-0.5">Empirical safety metrics calculated across campus routes and monitored zones</p>
+            </div>
+            <span className="bg-indigo-500/10 text-indigo-300 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-indigo-500/20">
+              Aggregated Status
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {/* Overall SafeScore */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">Overall Safety Score</span>
+              <div className="flex items-baseline gap-1 my-1">
+                <span className="text-2xl font-black text-indigo-300">{profile.safetyScore}</span>
+                <span className="text-xs text-[#94a3b8]">/ 100</span>
+              </div>
+              <span className="text-[10px] text-emerald-400 font-semibold">● Good Corridor Index</span>
+            </div>
+
+            {/* Risk Level */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">Risk Level</span>
+              <span className="text-xl font-black text-amber-300 my-1">{profile.riskLevel}</span>
+              <span className="text-[10px] text-[#94a3b8]">Environmental Risk</span>
+            </div>
+
+            {/* Monitored Zones */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">Monitored Zones</span>
+              <span className="text-2xl font-black text-white my-1">{profile.monitoredZones}</span>
+              <span className="text-[10px] text-[#94a3b8]">Active Geofences</span>
+            </div>
+
+            {/* Safe Zones */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">Safe Zones</span>
+              <span className="text-2xl font-black text-emerald-400 my-1">{profile.safeZones}</span>
+              <span className="text-[10px] text-emerald-400/90 font-medium">Verified Hubs</span>
+            </div>
+
+            {/* Active Incidents */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">Active Incidents</span>
+              <span className="text-2xl font-black text-amber-400 my-1">{profile.activeIncidents}</span>
+              <span className="text-[10px] text-[#94a3b8]">Under Review</span>
+            </div>
+
+            {/* Active Alerts */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 flex flex-col justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">Active Alerts</span>
+              <span className="text-2xl font-black text-red-400 my-1">{profile.activeAlerts}</span>
+              <span className="text-[10px] text-red-300 font-medium">Campus Notices</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs mt-1">
-            {/* Police Station */}
-            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px]">Jurisdiction Police Station</span>
-                <span className="text-emerald-400 font-bold">{institute.policeDistance}</span>
+          {/* SafeScore Empirical Disclaimer */}
+          <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 flex items-start gap-2.5 text-xs text-[#94a3b8]">
+            <Info size={15} className="text-indigo-400 shrink-0 mt-0.5" />
+            <p className="leading-relaxed text-[11px]">
+              SafeSphere uses route activity, incident reports, environmental conditions, accessibility, isolation, lighting and proximity to safe zones to estimate relative safety risk. SafeScore is an empirical risk estimate and <strong className="text-slate-300 font-semibold">not a guarantee of safety</strong>.
+            </p>
+          </div>
+        </div>
+
+        {/* ── 4. CAMPUS SAFETY COVERAGE (PROGRESS & BREAKDOWN) ── */}
+        <div className="bg-[#121420] border border-white/10 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Safety Coverage</h2>
+              <p className="text-xs text-[#94a3b8] mt-0.5">Spatial telemetry and data density across the institution's configured boundary</p>
+            </div>
+            <span className="text-sm font-mono font-bold text-indigo-300">{profile.dataCoverage}% Coverage</span>
+          </div>
+
+          {/* Coverage Bar */}
+          <div className="space-y-1.5">
+            <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/10 p-0.5">
+              <div
+                className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full transition-all duration-500"
+                style={{ width: `${profile.dataCoverage}%` }}
+              />
+            </div>
+            <p className="text-xs text-[#94a3b8]">
+              <strong className="text-white font-semibold">{profile.dataCoverage}%</strong> of the institution's configured area currently has safety intelligence coverage.
+            </p>
+          </div>
+
+          {/* Coverage Breakdown Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-3 border-t border-white/5 text-xs">
+            <div className="bg-white/[0.02] p-2.5 rounded-lg border border-white/5">
+              <span className="text-[#94a3b8] text-[10px] block uppercase font-bold">Monitored Area</span>
+              <span className="text-white font-semibold mt-0.5 block">{profile.totalArea}</span>
+            </div>
+            <div className="bg-white/[0.02] p-2.5 rounded-lg border border-white/5">
+              <span className="text-[#94a3b8] text-[10px] block uppercase font-bold">Monitored Zones</span>
+              <span className="text-white font-semibold mt-0.5 block">{profile.monitoredZones} Zones</span>
+            </div>
+            <div className="bg-white/[0.02] p-2.5 rounded-lg border border-white/5">
+              <span className="text-[#94a3b8] text-[10px] block uppercase font-bold">Safe Zones</span>
+              <span className="text-emerald-400 font-semibold mt-0.5 block">{profile.safeZones} Hubs</span>
+            </div>
+            <div className="bg-white/[0.02] p-2.5 rounded-lg border border-white/5">
+              <span className="text-[#94a3b8] text-[10px] block uppercase font-bold">High-Risk Zones</span>
+              <span className="text-amber-400 font-semibold mt-0.5 block">{profile.highRiskZones} Sectors</span>
+            </div>
+            <div className="bg-white/[0.02] p-2.5 rounded-lg border border-white/5">
+              <span className="text-[#94a3b8] text-[10px] block uppercase font-bold">Insufficient Data</span>
+              <span className="text-slate-400 font-semibold mt-0.5 block">{profile.insufficientDataZones} Sectors</span>
+            </div>
+            <div className="bg-white/[0.02] p-2.5 rounded-lg border border-white/5">
+              <span className="text-[#94a3b8] text-[10px] block uppercase font-bold">Data Refresh</span>
+              <span className="text-indigo-300 font-medium mt-0.5 block truncate">{profile.lastRefresh}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 5. EMERGENCY RESOURCES (INFORMATIONAL ONLY) ── */}
+        <div className="bg-[#121420] border border-white/10 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <div>
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Emergency Resources</h2>
+              <p className="text-xs text-[#94a3b8]">Configured local emergency points for student and staff reference</p>
+            </div>
+            <span className="text-[10px] text-amber-300/80 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full w-fit">
+              Informational Contacts (No Direct Municipal Dispatch)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+            {/* Campus Security Desk */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 flex flex-col justify-between">
+              <div>
+                <span className="text-[#94a3b8] text-[10px] font-bold uppercase block mb-1">Campus Security Desk</span>
+                <span className="text-white font-semibold text-xs block">Gate 1 Main Office</span>
+                <span className="text-[#94a3b8] text-[11px] block mt-0.5">Direct Internal Ext.</span>
               </div>
-              <span className="text-white font-bold text-sm">{institute.nearestPoliceStation}</span>
-              <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[#94a3b8]">
-                <span>Emergency Contact:</span>
-                <span className="text-white font-mono font-bold">{institute.policePhone}</span>
+              <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between">
+                <span className="text-[#94a3b8] text-[10px]">On-Campus</span>
+                <span className="text-emerald-400 font-semibold text-[11px]">Active Desk</span>
               </div>
             </div>
 
-            {/* Hospital Link */}
-            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px]">Emergency Medical &amp; Trauma Centre</span>
-                <span className="text-emerald-400 font-bold">{institute.hospitalDistance}</span>
+            {/* Emergency Assembly Point */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 flex flex-col justify-between">
+              <div>
+                <span className="text-[#94a3b8] text-[10px] font-bold uppercase block mb-1">Emergency Assembly Point</span>
+                <span className="text-white font-semibold text-xs block">Central Sports Grounds</span>
+                <span className="text-[#94a3b8] text-[11px] block mt-0.5">Designated Open Area</span>
               </div>
-              <span className="text-white font-bold text-sm">{institute.nearestHospital}</span>
-              <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[#94a3b8]">
-                <span>Ambulance Hotline:</span>
-                <span className="text-white font-mono font-bold">{institute.hospitalPhone}</span>
+              <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between">
+                <span className="text-[#94a3b8] text-[10px]">On-Campus</span>
+                <span className="text-indigo-300 font-semibold text-[11px]">Primary Zone</span>
               </div>
+            </div>
+
+            {/* Nearest Police Station */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 flex flex-col justify-between">
+              <div>
+                <span className="text-[#94a3b8] text-[10px] font-bold uppercase block mb-1">Jurisdiction Police Station</span>
+                <span className="text-white font-semibold text-xs block">Rajouri Garden Station</span>
+                <span className="text-[#94a3b8] text-[11px] block mt-0.5">West Delhi District</span>
+              </div>
+              <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between">
+                <span className="text-[#94a3b8] text-[10px]">~450m</span>
+                <span className="text-slate-300 text-[11px]">Informational</span>
+              </div>
+            </div>
+
+            {/* Nearest Hospital */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 flex flex-col justify-between">
+              <div>
+                <span className="text-[#94a3b8] text-[10px] font-bold uppercase block mb-1">Medical Care &amp; Hospital</span>
+                <span className="text-white font-semibold text-xs block">ESI PGIMSR Hospital</span>
+                <span className="text-[#94a3b8] text-[11px] block mt-0.5">Trauma Emergency Unit</span>
+              </div>
+              <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between">
+                <span className="text-[#94a3b8] text-[10px]">~1.2 km</span>
+                <span className="text-slate-300 text-[11px]">Informational</span>
+              </div>
+            </div>
+
+            {/* Nearest Fire Station */}
+            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 flex flex-col justify-between">
+              <div>
+                <span className="text-[#94a3b8] text-[10px] font-bold uppercase block mb-1">Fire &amp; Rescue Services</span>
+                <span className="text-white font-semibold text-xs block">Janakpuri Fire Division</span>
+                <span className="text-[#94a3b8] text-[11px] block mt-0.5">Station #14</span>
+              </div>
+              <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between">
+                <span className="text-[#94a3b8] text-[10px]">~2.1 km</span>
+                <span className="text-slate-300 text-[11px]">Informational</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 6. TRUST & DATA PRIVACY ARCHITECTURE ── */}
+        <div className="bg-[#121420] border border-white/10 rounded-2xl p-5 shadow-sm flex flex-col gap-3.5">
+          <div className="flex items-center gap-2 text-white font-semibold text-sm pb-2 border-b border-white/10">
+            <Lock size={16} className="text-indigo-400" />
+            <span>Data &amp; Privacy Architecture</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+            <div className="flex items-start gap-2 text-[#94a3b8]">
+              <Check size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+              <span>Institutional data is access-controlled and role-restricted</span>
+            </div>
+            <div className="flex items-start gap-2 text-[#94a3b8]">
+              <Check size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+              <span>Individual journeys are anonymized for institutional analytics</span>
+            </div>
+            <div className="flex items-start gap-2 text-[#94a3b8]">
+              <Check size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+              <span>Institutional dashboards display aggregated safety intelligence</span>
+            </div>
+            <div className="flex items-start gap-2 text-[#94a3b8]">
+              <Check size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+              <span>Emergency actions require explicit user interaction in consumer app</span>
+            </div>
+            <div className="flex items-start gap-2 text-[#94a3b8]">
+              <Check size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+              <span>SafeScore represents relative risk, not guaranteed safety</span>
+            </div>
+            <div className="flex items-start gap-2 text-[#94a3b8]">
+              <Check size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+              <span>Telemetry data is stored in isolated tenant boundaries</span>
             </div>
           </div>
         </div>
       </main>
 
-      {/* ── EDIT INSTITUTE PROFILE MODAL ── */}
+      {/* ── EDIT INSTITUTION DETAILS MODAL ── */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
           <div
-            className="w-full max-w-lg rounded-2xl p-6 lg:p-8 relative border border-white/15 text-white shadow-2xl max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-lg rounded-2xl p-6 relative border border-white/15 text-white shadow-2xl max-h-[90vh] overflow-y-auto"
             style={{ background: '#121522' }}
           >
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-indigo-400" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white">Edit Institute Details</h2>
-                  <p className="text-xs text-[#94a3b8]">Update official campus entity information</p>
-                </div>
+            <div className="flex items-center justify-between mb-5 pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <Building2 className="w-5 h-5 text-indigo-400" />
+                <h2 className="text-base font-bold text-white">Edit Institution Details</h2>
               </div>
               <button
                 onClick={() => setIsEditModalOpen(false)}
                 className="text-[#94a3b8] hover:text-white bg-transparent border-none cursor-pointer p-1"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
+            <form onSubmit={handleSave} className="space-y-3.5 text-xs">
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1.5">
-                  Official Institution Name
-                </label>
+                <label className="text-[#94a3b8] font-semibold block mb-1">Institution Name</label>
                 <input
                   type="text"
                   required
                   value={editForm.name}
                   onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full bg-[#1a1d2e] border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[#1a1d2e] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1.5">
-                    Institution Category
-                  </label>
+                  <label className="text-[#94a3b8] font-semibold block mb-1">Institution Type</label>
                   <input
                     type="text"
                     required
                     value={editForm.type}
                     onChange={e => setEditForm({ ...editForm, type: e.target.value })}
-                    className="w-full bg-[#1a1d2e] border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#1a1d2e] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1.5">
-                    Official Domain
-                  </label>
+                  <label className="text-[#94a3b8] font-semibold block mb-1">Domain</label>
                   <input
                     type="text"
                     required
                     value={editForm.domain}
                     onChange={e => setEditForm({ ...editForm, domain: e.target.value })}
-                    className="w-full bg-[#1a1d2e] border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#1a1d2e] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1.5">
-                  Campus HQ Address
-                </label>
+                <label className="text-[#94a3b8] font-semibold block mb-1">Affiliation</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.affiliation}
+                  onChange={e => setEditForm({ ...editForm, affiliation: e.target.value })}
+                  className="w-full bg-[#1a1d2e] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[#94a3b8] font-semibold block mb-1">Campus Location / Address</label>
                 <textarea
                   rows={2}
                   required
                   value={editForm.address}
                   onChange={e => setEditForm({ ...editForm, address: e.target.value })}
-                  className="w-full bg-[#1a1d2e] border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"
+                  className="w-full bg-[#1a1d2e] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 resize-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1.5">
-                    Security Operations Hotline
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editForm.hotlinePhone}
-                    onChange={e => setEditForm({ ...editForm, hotlinePhone: e.target.value })}
-                    className="w-full bg-[#1a1d2e] border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1.5">
-                    Chief Security Officer (CSO)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editForm.csoName}
-                    onChange={e => setEditForm({ ...editForm, csoName: e.target.value })}
-                    className="w-full bg-[#1a1d2e] border border-white/15 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
+              <div>
+                <label className="text-[#94a3b8] font-semibold block mb-1">Safety Administrator Contact</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.administrator}
+                  onChange={e => setEditForm({ ...editForm, administrator: e.target.value })}
+                  className="w-full bg-[#1a1d2e] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                />
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-white/10 mt-6">
+              <div className="flex gap-3 pt-3 border-t border-white/10 mt-4">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 bg-white/10 hover:bg-white/15 text-white font-bold py-3 rounded-xl transition-colors cursor-pointer border-none"
+                  className="flex-1 bg-white/10 hover:bg-white/15 text-white font-semibold py-2.5 rounded-xl transition-colors cursor-pointer border-none"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-[#4f46e5] to-[#3730a3] hover:from-[#6366f1] hover:to-[#4338ca] text-white font-bold py-3 rounded-xl transition-all shadow-[0_4px_16px_rgba(79,70,229,0.35)] flex items-center justify-center gap-2 cursor-pointer border-none"
+                  className="flex-1 bg-gradient-to-r from-[#4f46e5] to-[#3730a3] hover:from-[#6366f1] hover:to-[#4338ca] text-white font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border-none shadow-md"
                 >
-                  <Save size={15} />
-                  <span>Save Changes</span>
+                  <Save size={14} />
+                  <span>Save Configuration</span>
                 </button>
               </div>
             </form>
