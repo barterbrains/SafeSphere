@@ -199,6 +199,15 @@ export default function InstitutionProfilePage() {
 
     if (!isDemo && user?.id) {
       try {
+        // Guarantee that a profile row exists for foreign key constraint
+        await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            name: profile.name || user.email?.split('@')[0] || 'User',
+            role: 'consumer',
+          }, { onConflict: 'id' });
+
         const payload = {
           user_id: user.id,
           name: newContactName.trim(),
