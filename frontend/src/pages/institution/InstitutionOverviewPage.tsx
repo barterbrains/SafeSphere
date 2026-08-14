@@ -128,12 +128,23 @@ export default function InstitutionOverviewPage() {
         
         {/* TopAppBar Mobile Fallback */}
         <header className="md:hidden flex justify-between items-center px-4 py-4 bg-[#0a0a12]/90 backdrop-blur-xl border-b border-white/10 shadow-sm z-40 fixed top-0 w-full">
-          <h1 className="text-[18px] font-bold text-white">SafeSphere Command</h1>
+          <div
+            onClick={() => navigate('/institution/overview')}
+            className="flex items-center gap-2.5 cursor-pointer"
+          >
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#4f46e5] to-[#3730a3] flex items-center justify-center shadow-[0_0_12px_rgba(79,70,229,0.5)]">
+              <span className="material-symbols-outlined text-white text-sm">shield</span>
+            </div>
+            <h1 className="text-[17px] font-bold text-white tracking-tight">SafeSphere</h1>
+          </div>
           <div className="flex gap-4 items-center">
             <button className="text-slate-400 hover:text-white transition-colors duration-200">
               <span className="material-symbols-outlined">notifications</span>
             </button>
-            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs text-white">
+            <div
+              onClick={() => navigate('/institution/profile')}
+              className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs text-white cursor-pointer hover:bg-indigo-500 transition-colors"
+            >
               C
             </div>
           </div>

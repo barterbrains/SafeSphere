@@ -19,12 +19,16 @@ export function InstitutionNav() {
 
   return (
     <nav className="hidden md:flex flex-col h-full w-[280px] bg-[#0d0d1a]/80 backdrop-blur-3xl border-r border-white/10 shadow-lg py-6 z-50 shrink-0">
-      <div className="px-6 mb-6 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#4f46e5] to-[#3730a3] border border-[#818cf8]/40 shadow-[0_0_16px_rgba(79,70,229,0.4)] flex items-center justify-center flex-shrink-0">
+      <div
+        onClick={() => navigate('/institution/overview')}
+        className="px-6 mb-6 flex items-center gap-3 cursor-pointer group select-none"
+        title="Open Command Center"
+      >
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#4f46e5] to-[#3730a3] border border-[#818cf8]/40 shadow-[0_0_16px_rgba(79,70,229,0.4)] flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:shadow-[0_0_22px_rgba(79,70,229,0.7)] transition-all">
           <span className="material-symbols-outlined text-white text-lg">shield</span>
         </div>
         <div>
-          <h1 className="text-[18px] leading-tight font-bold text-white">SafeSphere</h1>
+          <h1 className="text-[18px] leading-tight font-bold text-white group-hover:text-indigo-300 transition-colors">SafeSphere</h1>
           <p className="text-[11px] leading-tight tracking-wider font-semibold text-[#818cf8] mt-0.5">Institutional Command</p>
         </div>
       </div>
