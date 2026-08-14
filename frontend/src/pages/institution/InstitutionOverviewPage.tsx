@@ -7,17 +7,39 @@ import {
   DEMO_INCIDENTS,
   DEMO_MAP_MARKERS,
 } from '../../mock/demoCommandCenterData';
-import { getUser, apiFetch } from '../../utils';
+import { apiFetch } from '../../utils';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { InstitutionNav } from './InstitutionNav';
 
 export default function InstitutionOverviewPage() {
   const navigate = useNavigate();
-  const user = getUser();
-  const isDemo = !user || user.id?.startsWith('demo') || user.email?.includes('demo') || user.role === 'consumer' || user.role === 'institution';
+  const { user, isDemo } = useAuth();
 
   const [realData, setRealData] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [zoomLevel, setZoomLevel] = useState(12);
+
+  // Warning banner for users who skipped adding contacts
+  const [showContactWarning, setShowContactWarning] = useState(false);
+
+  useEffect(() => {
+    if (!isDemo && user?.id) {
+      // Check if user has zero contacts and has not permanently dismissed this session
+      const dismissed = localStorage.getItem('safesphere_dismiss_contact_warning') === 'true';
+      if (!dismissed) {
+        supabase
+          .from('trusted_contacts')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .then(({ count }) => {
+            if (count === 0) {
+              setShowContactWarning(true);
+            }
+          });
+      }
+    }
+  }, [isDemo, user?.id]);
 
   useEffect(() => {
     if (!isDemo) {
@@ -66,7 +88,7 @@ export default function InstitutionOverviewPage() {
         {/* Dashboard Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pt-20 md:pt-6 pb-20 md:pb-6">
           
-          {/* Header */}
+          {/* Top Header */}
           <div className="flex justify-between items-end mb-6">
             <div>
               <div className="flex items-center gap-3">
@@ -101,6 +123,42 @@ export default function InstitutionOverviewPage() {
               </button>
             </div>
           </div>
+
+          {/* Persistent Contact Warning Banner */}
+          {showContactWarning && (
+            <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-300 shrink-0">
+                  <span className="material-symbols-outlined text-lg">warning</span>
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">No Trusted Guardians Configured</h4>
+                  <p className="text-xs text-amber-200/90 mt-0.5">
+                    Your emergency SOS broadcasts cannot reach personal contacts until you add at least one guardian.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => navigate('/institution/profile')}
+                  className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-extrabold rounded-lg transition-all cursor-pointer border-none shadow"
+                >
+                  Add Guardian
+                </button>
+                <button
+                  onClick={() => {
+                    setShowContactWarning(false);
+                    localStorage.setItem('safesphere_dismiss_contact_warning', 'true');
+                  }}
+                  className="p-1.5 text-amber-300/70 hover:text-amber-200 bg-transparent border-none cursor-pointer"
+                  title="Dismiss warning"
+                >
+                  <span className="material-symbols-outlined text-base">close</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* KPI Row (4 Cards) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

@@ -3,11 +3,18 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 // ── Types ──────────────────────────────────────────────────────────────────
-interface Profile {
+export interface Profile {
   id: string;
   name: string | null;
   role: 'consumer' | 'institution';
   institution_id: string | null;
+  phone?: string | null;
+  blood_type?: string | null;
+  allergies?: string | null;
+  medical_conditions?: string | null;
+  home_address?: string | null;
+  work_safe_zone?: string | null;
+  onboarded?: boolean;
 }
 
 interface AuthContextValue {
@@ -20,6 +27,8 @@ interface AuthContextValue {
   signUp: (email: string, password: string, name: string, role?: 'consumer' | 'institution') => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   setDemoMode: () => void;
+  refreshProfile: () => Promise<Profile | null>;
+  completeOnboarding: (data: Partial<Profile>) => Promise<{ error: string | null }>;
 }
 
 // ── Context ────────────────────────────────────────────────────────────────
@@ -42,17 +51,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   // Fetch profile row from public.profiles
-  async function fetchProfile(userId: string) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, name, role, institution_id')
-      .eq('id', userId)
-      .single();
-    if (error) {
-      console.warn('[SafeSphere] Profile fetch failed:', error.message);
+  async function fetchProfile(userId: string): Promise<Profile | null> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('[SafeSphere] Profile fetch error:', error.message);
+        return null;
+      }
+      return (data as Profile) || null;
+    } catch (err: any) {
+      console.warn('[SafeSphere] Profile fetch exception:', err);
       return null;
     }
-    return data as Profile;
+  }
+
+  async function refreshProfile(): Promise<Profile | null> {
+    if (!user) return null;
+    const p = await fetchProfile(user.id);
+    if (p) {
+      setProfile(p);
+      localStorage.setItem('safesphere_user', JSON.stringify({ id: p.id, name: p.name, email: user.email, role: p.role }));
+    }
+    return p;
   }
 
   // Initialise on mount: restore session from storage
@@ -64,7 +89,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (s?.user) {
         const p = await fetchProfile(s.user.id);
         setProfile(p);
-        // Keep legacy localStorage helpers in sync
         if (p) {
           localStorage.setItem('safesphere_token', s.access_token);
           localStorage.setItem('safesphere_user', JSON.stringify({ id: p.id, name: p.name, email: s.user.email, role: p.role }));
@@ -97,9 +121,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Auth actions ───────────────────────────────────────────────────────
   async function signIn(email: string, password: string): Promise<{ error: string | null }> {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setLoading(false);
+      return { error: error.message };
+    }
+    if (data.user) {
+      const p = await fetchProfile(data.user.id);
+      setProfile(p);
+    }
     setLoading(false);
-    if (error) return { error: error.message };
     return { error: null };
   }
 
@@ -118,19 +149,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
     if (error) return { error: error.message };
 
-    // If email confirmation is disabled, upsert profile immediately
     if (data.user) {
       await supabase.from('profiles').upsert({
         id: data.user.id,
         name,
         role,
+        onboarded: false,
       });
     }
     return { error: null };
   }
 
+  async function completeOnboarding(data: Partial<Profile>): Promise<{ error: string | null }> {
+    if (!user) return { error: 'No active session.' };
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        ...data,
+        onboarded: true,
+      })
+      .eq('id', user.id);
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    await refreshProfile();
+    return { error: null };
+  }
+
   async function signOut() {
-    // Clear demo flag too
     localStorage.removeItem('safesphere_demo');
     localStorage.removeItem('safesphere_token');
     localStorage.removeItem('safesphere_user');
@@ -151,7 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, isDemo, signIn, signUp, signOut, setDemoMode }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, isDemo, signIn, signUp, signOut, setDemoMode, refreshProfile, completeOnboarding }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,31 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import { InstitutionNav } from './InstitutionNav';
 
 export default function InstitutionProfilePage() {
   const navigate = useNavigate();
-  const { user, profile: authProfile, signOut, isDemo } = useAuth();
+  const { user, profile: authProfile, signOut, isDemo, refreshProfile } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'settings'>('profile');
+  const [loadingRealData, setLoadingRealData] = useState(!isDemo);
 
-  // ── Profile state: demo gets pre-filled data, real users start empty ──────
+  // ── Profile state ──────
   const [profile, setProfile] = useState({
     name:             isDemo ? 'Aarav Sharma'                        : (authProfile?.name || ''),
     email:            isDemo ? 'aarav.sharma@example.com'            : (user?.email || ''),
-    phone:            isDemo ? '+91 98101 23456'                     : '',
-    bloodType:        isDemo ? 'O+ Positive'                         : '',
-    allergies:        isDemo ? 'Penicillin, Peanuts'                 : '',
-    medicalConditions:isDemo ? 'Asthma (Carries Inhaler)'            : '',
-    homeAddress:      isDemo ? 'C-42, Hauz Khas Enclave, New Delhi'  : '',
-    workSafeZone:     isDemo ? 'Barakhamba Road, Connaught Place, New Delhi' : '',
+    phone:            isDemo ? '+91 98101 23456'                     : (authProfile?.phone || ''),
+    bloodType:        isDemo ? 'O+ Positive'                         : (authProfile?.blood_type || ''),
+    allergies:        isDemo ? 'Penicillin, Peanuts'                 : (authProfile?.allergies || ''),
+    medicalConditions:isDemo ? 'Asthma (Carries Inhaler)'            : (authProfile?.medical_conditions || ''),
+    homeAddress:      isDemo ? 'C-42, Hauz Khas Enclave, New Delhi'  : (authProfile?.home_address || ''),
+    workSafeZone:     isDemo ? 'Barakhamba Road, Connaught Place, New Delhi' : (authProfile?.work_safe_zone || ''),
     collegeSafeZone:  isDemo ? 'GTBIT Campus, Rajouri Garden, New Delhi'     : '',
-    memberTier:       isDemo ? 'SafeSphere Pro Guardian'             : 'SafeSphere Free',
-    verifiedPhone:    isDemo,
-    verifiedEmail:    isDemo,
+    memberTier:       isDemo ? 'SafeSphere Pro Guardian'             : 'Verified Member',
+    verifiedPhone:    isDemo ? true : !!authProfile?.phone,
+    verifiedEmail:    isDemo ? true : !!user?.email,
   });
 
-  // ── Trusted contacts: demo gets sample contacts, real users start empty ───
-  const [contacts, setContacts] = useState(
+  // ── Trusted contacts state ───
+  const [contacts, setContacts] = useState<any[]>(
     isDemo ? [
       { id: 'c-1', name: 'Rohan Sharma',   phone: '+91 98111 88990', relationship: 'Brother',  permission: 'Always (24/7 Live)',      status: 'Accepted' },
       { id: 'c-2', name: 'Dr. Meera Sharma', phone: '+91 98200 11223', relationship: 'Mother', permission: 'SOS Only',               status: 'Accepted' },
@@ -39,19 +41,125 @@ export default function InstitutionProfilePage() {
   const [newContactPerm, setNewContactPerm] = useState('SOS Only');
   const [showAddContact, setShowAddContact] = useState(false);
 
-  // ── Journey & alert history: demo gets sample data, real users see empty ──
-  const pastJourneys = isDemo ? [
-    { id: 'j-1', route: 'Connaught Place ➔ Hauz Khas',   date: 'Today, 2:15 PM',      safeScore: 94, duration: '28 mins', status: 'Completed Safely'          },
-    { id: 'j-2', route: 'Rajouri Garden ➔ India Gate',    date: 'Yesterday, 8:40 PM',  safeScore: 88, duration: '34 mins', status: 'Completed Safely'          },
-    { id: 'j-3', route: 'Saket CityWalk ➔ Hauz Khas',    date: '12 Aug, 10:10 PM',    safeScore: 82, duration: '18 mins', status: 'Rerouted (Low Lighting)'   },
-  ] : [];
+  // ── Journey & alert history ──
+  const [pastJourneys, setPastJourneys] = useState<any[]>(
+    isDemo ? [
+      { id: 'j-1', route: 'Connaught Place ➔ Hauz Khas',   date: 'Today, 2:15 PM',      safeScore: 94, duration: '28 mins', status: 'Completed Safely'          },
+      { id: 'j-2', route: 'Rajouri Garden ➔ India Gate',    date: 'Yesterday, 8:40 PM',  safeScore: 88, duration: '34 mins', status: 'Completed Safely'          },
+      { id: 'j-3', route: 'Saket CityWalk ➔ Hauz Khas',    date: '12 Aug, 10:10 PM',    safeScore: 82, duration: '18 mins', status: 'Rerouted (Low Lighting)'   },
+    ] : []
+  );
 
-  const alertHistory = isDemo ? [
-    { id: 'sos-1', type: 'Off-Route Alert Triggered', date: '04 Aug, 11:20 PM', location: 'Near Ring Road Flyover', resolvedBy: 'User Check-in (Safe)',   status: 'Resolved' },
-    { id: 'sos-2', type: 'Test SOS Broadcast',        date: '15 Jul, 04:00 PM', location: 'GTBIT Campus',          resolvedBy: 'System Diagnostic Test', status: 'Passed'   },
-  ] : [];
+  const [alertHistory, setAlertHistory] = useState<any[]>(
+    isDemo ? [
+      { id: 'sos-1', type: 'Off-Route Alert Triggered', date: '04 Aug, 11:20 PM', location: 'Near Ring Road Flyover', resolvedBy: 'User Check-in (Safe)',   status: 'Resolved' },
+      { id: 'sos-2', type: 'Test SOS Broadcast',        date: '15 Jul, 04:00 PM', location: 'GTBIT Campus',          resolvedBy: 'System Diagnostic Test', status: 'Passed'   },
+    ] : []
+  );
 
-  // ── Settings: sensible defaults for all users ─────────────────────────────
+  // ── Real data query from Supabase for logged-in user ───────────────────────
+  useEffect(() => {
+    if (isDemo || !user?.id) {
+      setLoadingRealData(false);
+      return;
+    }
+
+    const currentUserId = user.id;
+    const currentUserEmail = user.email || '';
+
+    async function loadUserData() {
+      setLoadingRealData(true);
+      try {
+        // 1. Fetch Profile
+        const { data: profileRow } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentUserId)
+          .maybeSingle();
+
+        if (profileRow) {
+          setProfile({
+            name: profileRow.name || currentUserEmail.split('@')[0] || 'User',
+            email: currentUserEmail,
+            phone: profileRow.phone || '',
+            bloodType: profileRow.blood_type || '',
+            allergies: profileRow.allergies || '',
+            medicalConditions: profileRow.medical_conditions || '',
+            homeAddress: profileRow.home_address || '',
+            workSafeZone: profileRow.work_safe_zone || '',
+            collegeSafeZone: '',
+            memberTier: 'Verified Member',
+            verifiedPhone: !!profileRow.phone,
+            verifiedEmail: !!currentUserEmail,
+          });
+        }
+
+        // 2. Fetch Trusted Contacts
+        const { data: contactsData } = await supabase
+          .from('trusted_contacts')
+          .select('*')
+          .eq('user_id', currentUserId)
+          .order('created_at', { ascending: false });
+
+        if (contactsData) {
+          setContacts(contactsData.map(c => ({
+            id: c.id,
+            name: c.name,
+            phone: c.phone || c.contact || '',
+            relationship: c.relationship || 'Guardian',
+            permission: c.permission || 'SOS Only',
+            status: c.status || (c.enabled ? 'Accepted' : 'Pending'),
+          })));
+        }
+
+        // 3. Fetch Journeys
+        const { data: journeysData } = await supabase
+          .from('journeys')
+          .select('*')
+          .eq('user_id', currentUserId)
+          .order('started_at', { ascending: false })
+          .limit(5);
+
+        if (journeysData) {
+          setPastJourneys(journeysData.map(j => ({
+            id: j.id,
+            route: j.route_summary || `${j.origin_name || 'Origin'} ➔ ${j.destination_name || 'Destination'}`,
+            date: new Date(j.started_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            safeScore: Math.round(Number(j.current_safe_score || 85)),
+            duration: j.duration_mins ? `${j.duration_mins} mins` : 'Completed',
+            status: j.status === 'completed' ? 'Completed Safely' : j.status,
+          })));
+        }
+
+        // 4. Fetch SOS Alert History
+        const { data: sosData } = await supabase
+          .from('sos_incidents')
+          .select('*')
+          .eq('user_id', currentUserId)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (sosData) {
+          setAlertHistory(sosData.map(a => ({
+            id: a.id,
+            type: a.type || 'Emergency SOS Broadcast',
+            date: new Date(a.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            location: a.location_name || 'Delhi NCR Region',
+            resolvedBy: a.resolved_by || 'Dispatched',
+            status: a.status,
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching Supabase user profile data:', err);
+      } finally {
+        setLoadingRealData(false);
+      }
+    }
+
+    loadUserData();
+  }, [isDemo, user?.id]);
+
+  // ── Settings ───────────────────────────────────────────────────────────────
   const [autoSosMinutes, setAutoSosMinutes] = useState('5');
   const [autoSosSafeScoreDrop, setAutoSosSafeScoreDrop] = useState(true);
   const [safeScoreThreshold, setSafeScoreThreshold] = useState('60');
@@ -75,26 +183,57 @@ export default function InstitutionProfilePage() {
   const [appUnits, setAppUnits] = useState('Kilometers (km)');
   const [appLanguage, setAppLanguage] = useState('English (India)');
 
-  const handleAddContact = (e: React.FormEvent) => {
+  const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newContactName.trim() || !newContactPhone.trim()) return;
-    setContacts([
-      ...contacts,
-      {
-        id: `c-${Date.now()}`,
+
+    if (!isDemo && user?.id) {
+      const { data, error } = await supabase.from('trusted_contacts').insert({
+        user_id: user.id,
         name: newContactName.trim(),
         phone: newContactPhone.trim(),
         relationship: newContactRel,
         permission: newContactPerm,
-        status: 'Pending',
-      },
-    ]);
+        status: 'Accepted',
+        enabled: true,
+      }).select().single();
+
+      if (!error && data) {
+        setContacts([
+          {
+            id: data.id,
+            name: data.name,
+            phone: data.phone || data.contact,
+            relationship: data.relationship,
+            permission: data.permission,
+            status: data.status,
+          },
+          ...contacts,
+        ]);
+      }
+    } else {
+      setContacts([
+        {
+          id: `c-${Date.now()}`,
+          name: newContactName.trim(),
+          phone: newContactPhone.trim(),
+          relationship: newContactRel,
+          permission: newContactPerm,
+          status: 'Accepted',
+        },
+        ...contacts,
+      ]);
+    }
+
     setNewContactName('');
     setNewContactPhone('');
     setShowAddContact(false);
   };
 
-  const handleRemoveContact = (id: string) => {
+  const handleRemoveContact = async (id: string) => {
+    if (!isDemo && user?.id) {
+      await supabase.from('trusted_contacts').delete().eq('id', id).eq('user_id', user.id);
+    }
     setContacts(contacts.filter(c => c.id !== id));
   };
 
@@ -121,10 +260,10 @@ export default function InstitutionProfilePage() {
             <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
               User Profile &amp; Settings
               <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">verified_user</span> Verified Account
+                <span className="material-symbols-outlined text-sm">verified_user</span> {isDemo ? 'Demo Mode' : 'Verified Account'}
               </span>
             </h1>
-            <p className="text-slate-400 text-sm mt-1">Manage your identity, emergency medical data, trusted contacts, and safety preferences.</p>
+            <p className="text-slate-400 text-sm mt-1">Manage your personal identity, emergency medical info, trusted contacts, and safety preferences.</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -177,18 +316,15 @@ export default function InstitutionProfilePage() {
                   <div className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-[#4f46e5] to-[#3730a3] border-2 border-indigo-400/40 flex items-center justify-center shadow-[0_0_30px_rgba(79,70,229,0.4)]">
                     <span className="material-symbols-outlined text-4xl text-white">person</span>
                   </div>
-                  <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-black text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow">
-                    PRO
-                  </div>
                 </div>
 
-                <h2 className="text-xl font-bold text-white">{profile.name}</h2>
+                <h2 className="text-xl font-bold text-white">{profile.name || 'User'}</h2>
                 <p className="text-indigo-400 text-xs font-semibold mt-0.5">{profile.memberTier}</p>
-                <p className="text-slate-400 text-xs mt-1">{profile.email} · {profile.phone}</p>
+                <p className="text-slate-400 text-xs mt-1">{profile.email} {profile.phone ? `· ${profile.phone}` : ''}</p>
 
                 <div className="w-full border-t border-white/10 my-5" />
 
-                {/* Emergency Medical Info (Shown only in SOS) */}
+                {/* Emergency Medical Info */}
                 <div className="w-full text-left">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -198,20 +334,34 @@ export default function InstitutionProfilePage() {
                       SOS Only
                     </span>
                   </div>
-                  <div className="bg-black/30 border border-white/5 rounded-xl p-3.5 flex flex-col gap-2 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Blood Group:</span>
-                      <span className="font-bold text-white">{profile.bloodType}</span>
+
+                  {(!profile.bloodType && !profile.allergies && !profile.medicalConditions) ? (
+                    <div className="p-4 bg-black/30 border border-dashed border-white/10 rounded-xl text-center flex flex-col items-center gap-1.5">
+                      <span className="text-xs text-slate-400">Not provided yet</span>
+                      <p className="text-[11px] text-slate-500">Helps responders deliver proper care during an emergency.</p>
+                      <button
+                        onClick={() => navigate('/onboarding')}
+                        className="mt-1 text-xs font-bold text-indigo-400 hover:text-indigo-300 bg-transparent border-none cursor-pointer underline"
+                      >
+                        Add Medical Info →
+                      </button>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Allergies:</span>
-                      <span className="font-semibold text-slate-200">{profile.allergies}</span>
+                  ) : (
+                    <div className="bg-black/30 border border-white/5 rounded-xl p-3.5 flex flex-col gap-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Blood Group:</span>
+                        <span className="font-bold text-white">{profile.bloodType || 'Not specified'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Allergies:</span>
+                        <span className="font-semibold text-slate-200">{profile.allergies || 'None listed'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Conditions:</span>
+                        <span className="font-semibold text-slate-200">{profile.medicalConditions || 'None listed'}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Conditions:</span>
-                      <span className="font-semibold text-slate-200">{profile.medicalConditions}</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Frequent Safe Zones */}
@@ -219,16 +369,34 @@ export default function InstitutionProfilePage() {
                   <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-2 block flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-sm">home_pin</span> Recognized Safe Zones
                   </span>
-                  <div className="flex flex-col gap-2 text-xs">
-                    <div className="p-3 bg-black/30 border border-white/5 rounded-xl">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase block">Home Perimeter</span>
-                      <span className="text-slate-200 font-medium">{profile.homeAddress}</span>
+
+                  {(!profile.homeAddress && !profile.workSafeZone) ? (
+                    <div className="p-4 bg-black/30 border border-dashed border-white/10 rounded-xl text-center flex flex-col items-center gap-1.5 text-xs">
+                      <span className="text-slate-400">No safe zones configured</span>
+                      <p className="text-[11px] text-slate-500">Helps the engine identify when you are in known-safe areas.</p>
+                      <button
+                        onClick={() => navigate('/onboarding')}
+                        className="mt-1 text-xs font-bold text-indigo-400 hover:text-indigo-300 bg-transparent border-none cursor-pointer underline"
+                      >
+                        Set Home/Work Zones →
+                      </button>
                     </div>
-                    <div className="p-3 bg-black/30 border border-white/5 rounded-xl">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase block">Work Hub</span>
-                      <span className="text-slate-200 font-medium">{profile.workSafeZone}</span>
+                  ) : (
+                    <div className="flex flex-col gap-2 text-xs">
+                      {profile.homeAddress && (
+                        <div className="p-3 bg-black/30 border border-white/5 rounded-xl">
+                          <span className="text-[11px] font-bold text-slate-400 uppercase block">Home Perimeter</span>
+                          <span className="text-slate-200 font-medium">{profile.homeAddress}</span>
+                        </div>
+                      )}
+                      {profile.workSafeZone && (
+                        <div className="p-3 bg-black/30 border border-white/5 rounded-xl">
+                          <span className="text-[11px] font-bold text-slate-400 uppercase block">Work / Campus Hub</span>
+                          <span className="text-slate-200 font-medium">{profile.workSafeZone}</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
 
               </div>
@@ -283,10 +451,10 @@ export default function InstitutionProfilePage() {
                         onChange={e => setNewContactRel(e.target.value)}
                         className="bg-[#111522] border border-white/10 rounded-xl px-3 py-2 text-xs text-slate-300 outline-none"
                       >
-                        <option value="Parent">Parent / Family</option>
-                        <option value="Spouse">Spouse / Partner</option>
+                        <option value="Parent / Family">Parent / Family</option>
+                        <option value="Spouse / Partner">Spouse / Partner</option>
                         <option value="Sibling">Sibling</option>
-                        <option value="Friend">Friend / Colleague</option>
+                        <option value="Friend / Colleague">Friend / Colleague</option>
                       </select>
                       <select
                         value={newContactPerm}
@@ -322,14 +490,14 @@ export default function InstitutionProfilePage() {
                     <div className="flex flex-col items-center justify-center py-8 text-center gap-3 border border-dashed border-white/10 rounded-xl">
                       <span className="material-symbols-outlined text-3xl text-slate-600">group_add</span>
                       <div>
-                        <p className="text-sm font-semibold text-slate-400">No trusted contacts yet</p>
-                        <p className="text-xs text-slate-600 mt-1">Add people who will receive your live location and SOS alerts.</p>
+                        <p className="text-sm font-semibold text-slate-400">No trusted contacts added yet</p>
+                        <p className="text-xs text-slate-600 mt-1">Add guardians who will receive your real-time coordinates during an emergency.</p>
                       </div>
                       <button
                         onClick={() => setShowAddContact(true)}
                         className="text-xs font-bold text-indigo-400 hover:text-indigo-300 border-none bg-transparent cursor-pointer underline underline-offset-2"
                       >
-                        Add your first guardian →
+                        Add your first contact →
                       </button>
                     </div>
                   ) : (
@@ -337,7 +505,7 @@ export default function InstitutionProfilePage() {
                       <div key={c.id} className="p-3.5 rounded-xl bg-black/30 border border-white/5 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-indigo-900/40 border border-indigo-500/30 flex items-center justify-center font-bold text-indigo-300 text-sm">
-                            {c.name[0]}
+                            {c.name ? c.name[0] : 'G'}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -376,7 +544,7 @@ export default function InstitutionProfilePage() {
                     {pastJourneys.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-6 text-center gap-2 border border-dashed border-white/10 rounded-xl">
                         <span className="material-symbols-outlined text-2xl text-slate-600">route</span>
-                        <p className="text-xs text-slate-500">No journeys recorded yet.<br />Your protected trips will appear here.</p>
+                        <p className="text-xs text-slate-500">No journeys yet — your safest walk starts here.</p>
                       </div>
                     ) : pastJourneys.map(j => (
                       <div key={j.id} className="p-3 bg-black/30 border border-white/5 rounded-xl flex justify-between items-center text-xs">
@@ -403,7 +571,7 @@ export default function InstitutionProfilePage() {
                     {alertHistory.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-6 text-center gap-2 border border-dashed border-white/10 rounded-xl">
                         <span className="material-symbols-outlined text-2xl text-slate-600">notifications_off</span>
-                        <p className="text-xs text-slate-500">No alerts triggered.<br />Stay safe — your history will appear here.</p>
+                        <p className="text-xs text-slate-500">No alerts triggered. Stay safe!</p>
                       </div>
                     ) : alertHistory.map(a => (
                       <div key={a.id} className="p-3 bg-black/30 border border-white/5 rounded-xl flex justify-between items-center text-xs">
@@ -433,7 +601,7 @@ export default function InstitutionProfilePage() {
         {activeSubTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10">
             
-            {/* Box 1: Auto-SOS Triggers & Route Engine Defaults (CRITICAL TRUST CORE) */}
+            {/* Box 1: Auto-SOS Triggers & Route Engine Defaults */}
             <div className="bg-[#111522]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-5">
               <div className="border-b border-white/10 pb-3">
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -594,7 +762,7 @@ export default function InstitutionProfilePage() {
               </div>
             </div>
 
-            {/* Box 3: Notification Channels (Push + Critical SMS) */}
+            {/* Box 3: Notification Channels */}
             <div className="bg-[#111522]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
               <div className="border-b border-white/10 pb-3">
                 <h3 className="text-base font-bold text-white flex items-center gap-2">

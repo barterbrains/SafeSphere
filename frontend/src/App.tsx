@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import OnboardingPage from './pages/OnboardingPage';
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
 import RoutesPage from './pages/RoutesPage';
@@ -21,18 +22,43 @@ import InstitutionProfilePage from './pages/institution/InstitutionProfilePage';
 
 // ── Route Guards ───────────────────────────────────────────────────────────
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { session, isDemo, loading } = useAuth();
+  const { session, profile, isDemo, loading } = useAuth();
   if (loading) return <LoadingSpinner />;
-  if (isDemo || session) return <>{children}</>;
-  return <Navigate to="/login" replace />;
+  if (!isDemo && !session) return <Navigate to="/login" replace />;
+
+  // If real user is not yet onboarded (onboarded flag false), route to /onboarding
+  if (!isDemo && session && profile && profile.onboarded === false) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <>{children}</>;
 }
 
 function InstitutionRoute({ children }: { children: React.ReactNode }) {
-  const { session, isDemo, loading } = useAuth();
+  const { session, profile, isDemo, loading } = useAuth();
   if (loading) return <LoadingSpinner />;
-  // Allow demo users AND any signed-in user
-  if (isDemo || session) return <>{children}</>;
-  return <Navigate to="/login" replace />;
+  if (!isDemo && !session) return <Navigate to="/login" replace />;
+
+  // If real user is not yet onboarded, enforce onboarding first
+  if (!isDemo && session && profile && profile.onboarded === false) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function OnboardingRoute({ children }: { children: React.ReactNode }) {
+  const { session, profile, isDemo, loading } = useAuth();
+  if (loading) return <LoadingSpinner />;
+  if (!isDemo && !session) return <Navigate to="/login" replace />;
+  if (isDemo) return <Navigate to="/institution/overview" replace />;
+
+  // If already onboarded, send to overview
+  if (profile && profile.onboarded === true) {
+    return <Navigate to="/institution/overview" replace />;
+  }
+
+  return <>{children}</>;
 }
 
 function LoadingSpinner() {
@@ -68,6 +94,9 @@ function AppRoutes() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/institution/login" element={<InstitutionLoginPage />} />
 
+        {/* Onboarding Flow for new users */}
+        <Route path="/onboarding" element={<OnboardingRoute><OnboardingPage /></OnboardingRoute>} />
+
         {/* Consumer app */}
         <Route path="/home" element={<PrivateRoute><HomePage /></PrivateRoute>} />
         <Route path="/search" element={<PrivateRoute><SearchPage /></PrivateRoute>} />
@@ -78,7 +107,7 @@ function AppRoutes() {
         <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
         <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
 
-        {/* Institution */}
+        {/* Institution / Command suite */}
         <Route path="/institution/overview" element={<InstitutionRoute><InstitutionOverviewPage /></InstitutionRoute>} />
         <Route path="/institution/heatmap" element={<InstitutionRoute><InstitutionHeatmapPage /></InstitutionRoute>} />
         <Route path="/institution/incidents" element={<InstitutionRoute><InstitutionIncidentsPage /></InstitutionRoute>} />

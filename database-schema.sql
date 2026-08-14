@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════
--- SafeSphere · Supabase Schema (corrected dependency order)
+-- SafeSphere · Supabase Schema
 -- Run this entire file in: Supabase Dashboard → SQL Editor
 -- ═══════════════════════════════════════════════════════
 
@@ -13,12 +13,28 @@ CREATE TABLE IF NOT EXISTS institutions (
 
 -- ── 2. profiles (depends on institutions) ─────────────
 CREATE TABLE IF NOT EXISTS profiles (
-  id             UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  name           TEXT,
-  role           TEXT CHECK (role IN ('consumer','institution')) DEFAULT 'consumer',
-  institution_id UUID REFERENCES institutions(id),
-  created_at     TIMESTAMPTZ DEFAULT now()
+  id                 UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  name               TEXT,
+  role               TEXT CHECK (role IN ('consumer','institution')) DEFAULT 'consumer',
+  institution_id     UUID REFERENCES institutions(id),
+  phone              TEXT,
+  blood_type         TEXT,
+  allergies          TEXT,
+  medical_conditions TEXT,
+  home_address       TEXT,
+  work_safe_zone     TEXT,
+  onboarded          BOOLEAN DEFAULT false,
+  created_at         TIMESTAMPTZ DEFAULT now()
 );
+
+-- In case profiles table already exists, ensure new columns are added safely:
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS blood_type TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS allergies TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS medical_conditions TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS home_address TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS work_safe_zone TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS onboarded BOOLEAN DEFAULT false;
 
 -- ── 3. trusted_contacts ────────────────────────────────
 CREATE TABLE IF NOT EXISTS trusted_contacts (
@@ -27,8 +43,17 @@ CREATE TABLE IF NOT EXISTS trusted_contacts (
   name         TEXT NOT NULL,
   relationship TEXT,
   contact      TEXT,
-  enabled      BOOLEAN DEFAULT true
+  phone        TEXT,
+  permission   TEXT DEFAULT 'SOS Only',
+  status       TEXT DEFAULT 'Accepted',
+  enabled      BOOLEAN DEFAULT true,
+  created_at   TIMESTAMPTZ DEFAULT now()
 );
+
+ALTER TABLE trusted_contacts ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE trusted_contacts ADD COLUMN IF NOT EXISTS permission TEXT DEFAULT 'SOS Only';
+ALTER TABLE trusted_contacts ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Accepted';
+ALTER TABLE trusted_contacts ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
 
 -- ── 4. locations ───────────────────────────────────────
 CREATE TABLE IF NOT EXISTS locations (
@@ -79,21 +104,37 @@ CREATE TABLE IF NOT EXISTS journeys (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id           UUID REFERENCES profiles(id) ON DELETE CASCADE,
   route_id          UUID REFERENCES routes(id),
+  route_summary     TEXT,
+  origin_name       TEXT,
+  destination_name  TEXT,
+  duration_mins     INTEGER,
   status            TEXT CHECK (status IN ('active','completed','cancelled')) DEFAULT 'active',
   started_at        TIMESTAMPTZ DEFAULT now(),
   completed_at      TIMESTAMPTZ,
   current_safe_score NUMERIC
 );
 
+ALTER TABLE journeys ADD COLUMN IF NOT EXISTS route_summary TEXT;
+ALTER TABLE journeys ADD COLUMN IF NOT EXISTS origin_name TEXT;
+ALTER TABLE journeys ADD COLUMN IF NOT EXISTS destination_name TEXT;
+ALTER TABLE journeys ADD COLUMN IF NOT EXISTS duration_mins INTEGER;
+
 -- ── 9. sos_incidents ───────────────────────────────────
 CREATE TABLE IF NOT EXISTS sos_incidents (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  journey_id UUID REFERENCES journeys(id),
-  user_id    UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  location   JSONB,
-  status     TEXT DEFAULT 'active',
-  created_at TIMESTAMPTZ DEFAULT now()
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  journey_id  UUID REFERENCES journeys(id),
+  user_id     UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  type        TEXT DEFAULT 'Emergency SOS Broadcast',
+  location    JSONB,
+  location_name TEXT,
+  resolved_by TEXT,
+  status      TEXT DEFAULT 'active',
+  created_at  TIMESTAMPTZ DEFAULT now()
 );
+
+ALTER TABLE sos_incidents ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'Emergency SOS Broadcast';
+ALTER TABLE sos_incidents ADD COLUMN IF NOT EXISTS location_name TEXT;
+ALTER TABLE sos_incidents ADD COLUMN IF NOT EXISTS resolved_by TEXT;
 
 -- ── 10. safe_zones ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS safe_zones (
@@ -126,6 +167,8 @@ CREATE TABLE IF NOT EXISTS district_safety_scores (
 
 -- ── Indexes ────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_journeys_user ON journeys(user_id);
+CREATE INDEX IF NOT EXISTS idx_trusted_contacts_user ON trusted_contacts(user_id);
+CREATE INDEX IF NOT EXISTS idx_sos_incidents_user ON sos_incidents(user_id);
 CREATE INDEX IF NOT EXISTS idx_safety_events_location ON safety_events USING GIN (location);
 CREATE INDEX IF NOT EXISTS idx_institutional_incidents_institution ON institutional_incidents(institution_id);
 
@@ -139,21 +182,21 @@ ALTER TABLE safe_zones            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE district_safety_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE institutional_incidents ENABLE ROW LEVEL SECURITY;
 
--- Profiles: users can read/update their own row
+-- Profiles: users can read/update/insert their own row
 DROP POLICY IF EXISTS "own profile" ON profiles;
-CREATE POLICY "own profile" ON profiles FOR ALL USING (id = auth.uid());
+CREATE POLICY "own profile" ON profiles FOR ALL USING (id = auth.uid()) WITH CHECK (id = auth.uid());
 
 -- Journeys: users own their journeys
 DROP POLICY IF EXISTS "own journeys" ON journeys;
-CREATE POLICY "own journeys" ON journeys FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "own journeys" ON journeys FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 -- Trusted contacts: users own their contacts
 DROP POLICY IF EXISTS "own contacts" ON trusted_contacts;
-CREATE POLICY "own contacts" ON trusted_contacts FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "own contacts" ON trusted_contacts FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 -- SOS incidents: users own their incidents
 DROP POLICY IF EXISTS "own sos" ON sos_incidents;
-CREATE POLICY "own sos" ON sos_incidents FOR ALL USING (user_id = auth.uid());
+CREATE POLICY "own sos" ON sos_incidents FOR ALL USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
 -- Safety events: public read
 DROP POLICY IF EXISTS "public read events" ON safety_events;
@@ -177,17 +220,19 @@ CREATE POLICY "institution scoped read" ON institutional_incidents FOR SELECT
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, name, role)
+  INSERT INTO public.profiles (id, name, role, onboarded)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'consumer')
+    COALESCE(NEW.raw_user_meta_data->>'role', 'consumer'),
+    false
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
 $$;
 
-CREATE OR REPLACE TRIGGER on_auth_user_created
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
