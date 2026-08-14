@@ -19,6 +19,7 @@ import InstitutionIncidentsPage from './pages/institution/InstitutionIncidentsPa
 import InstitutionAnalyticsPage from './pages/institution/InstitutionAnalyticsPage';
 import InstitutionAlertsPage from './pages/institution/InstitutionAlertsPage';
 import InstitutionProfilePage from './pages/institution/InstitutionProfilePage';
+import InstitutionSettingsPage from './pages/institution/InstitutionSettingsPage';
 
 // ── Route Guards ───────────────────────────────────────────────────────────
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -113,6 +114,7 @@ function AppRoutes() {
         <Route path="/institution/incidents" element={<InstitutionRoute><InstitutionIncidentsPage /></InstitutionRoute>} />
         <Route path="/institution/analytics" element={<InstitutionRoute><InstitutionAnalyticsPage /></InstitutionRoute>} />
         <Route path="/institution/alerts" element={<InstitutionRoute><InstitutionAlertsPage /></InstitutionRoute>} />
+        <Route path="/institution/settings" element={<InstitutionRoute><InstitutionSettingsPage /></InstitutionRoute>} />
         <Route path="/institution/profile" element={<InstitutionRoute><InstitutionProfilePage /></InstitutionRoute>} />
 
         {/* Default */}

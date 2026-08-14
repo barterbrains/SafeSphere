@@ -14,7 +14,7 @@ export function InstitutionNav() {
     { label: 'Fleet Status', icon: 'local_shipping', path: '/institution/heatmap' },
     { label: 'Safety Audits', icon: 'verified_user', path: '/institution/incidents' },
     { label: 'Profile & Access', icon: 'account_circle', path: '/institution/profile' },
-    { label: 'Settings', icon: 'settings', path: '/institution/alerts' },
+    { label: 'Settings', icon: 'settings', path: '/institution/settings' },
   ];
 
   return (
