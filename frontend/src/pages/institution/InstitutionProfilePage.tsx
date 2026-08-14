@@ -6,7 +6,7 @@ import {
   Building2, Shield, MapPin, Globe, Phone, Mail,
   Users, CheckCircle2, ShieldCheck, Edit3, Plus,
   Clock, AlertTriangle, Radio, Car, Navigation,
-  FileText, Award, X, Save, Sparkles
+  FileText, Award, X, Save, Sparkles, AlertCircle
 } from 'lucide-react';
 
 interface InstituteData {
@@ -44,14 +44,14 @@ export default function InstitutionProfilePage() {
     domain: 'gtbit.edu.in',
     address: 'G-8 Area, Rajouri Garden, New Delhi, Delhi 110064',
     affiliation: 'Guru Gobind Singh Indraprastha University (GGSIPU)',
-    licenseNumber: 'AICTE-DEL-ENG-2024 / ISO 27001 Safety Certified',
+    licenseNumber: 'AICTE-DEL-ENG-2024 / ISO 27001 Certified',
     totalUsers: '4,850 Active Students & Faculty',
     csoName: 'Prof. Harminder Singh',
     csoRole: 'Chief Security Officer & Campus Proctor',
     hotlinePhone: '+91 (11) 2852-1234 / Ext. 911',
     csoEmail: 'security.command@gtbit.edu.in',
     nearestPoliceStation: 'Rajouri Garden Police Station (West District)',
-    policeDistance: '450 meters (3 min dispatch)',
+    policeDistance: '450 meters (3 min PCR dispatch)',
     nearestHospital: 'ESI Postgraduate Medical Institute & Hospital',
     hospitalDistance: '1.2 km (5 min ambulance transit)',
     patrolVehiclesCount: 4,
@@ -93,7 +93,7 @@ export default function InstitutionProfilePage() {
       <InstitutionNav />
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-[#0a0a12] p-6 lg:p-10 flex flex-col gap-6">
+      <main className="flex-1 overflow-y-auto bg-[#0a0a12] p-6 lg:p-8 flex flex-col gap-6">
         {/* Toast Notification */}
         {saveToast && (
           <div className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 rounded-xl px-4 py-3 text-sm flex items-center justify-between shadow-lg animate-in fade-in duration-200">
@@ -108,31 +108,31 @@ export default function InstitutionProfilePage() {
         )}
 
         {/* ── Top Institutional Header Card ── */}
-        <div className="bg-[#12141e]/95 border border-white/10 rounded-2xl p-6 lg:p-7 backdrop-blur-xl relative overflow-hidden shadow-2xl">
+        <div className="w-full bg-[#121420] border border-white/10 rounded-2xl p-6 lg:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
           {/* Subtle glowing radial background */}
-          <div className="absolute -top-10 -right-10 w-80 h-80 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 relative z-10">
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#4f46e5] to-[#312e81] border border-[#818cf8]/40 shadow-[0_0_20px_rgba(79,70,229,0.35)] flex items-center justify-center shrink-0 mt-0.5">
-                <Building2 className="w-7 h-7 text-white" />
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#4f46e5] to-[#312e81] border border-[#818cf8]/40 shadow-[0_0_24px_rgba(79,70,229,0.4)] flex items-center justify-center shrink-0">
+                <Building2 className="w-8 h-8 text-white" />
               </div>
-              <div>
+              <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-xl lg:text-2xl font-black text-white tracking-tight">
+                  <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight">
                     {institute.name}
                   </h1>
-                  <span className="bg-[#3131c0]/40 text-[#c0c1ff] border border-[#818cf8]/40 px-3 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase">
+                  <span className="bg-[#3131c0]/40 text-[#c0c1ff] border border-[#818cf8]/40 px-3 py-1 rounded-full text-[10px] font-extrabold tracking-wider uppercase">
                     Verified Institution
                   </span>
                 </div>
-                <p className="text-[#94a3b8] text-xs mt-1.5 flex items-center gap-2 flex-wrap">
-                  <span className="text-slate-300 font-medium">{institute.type}</span>
+                <p className="text-[#94a3b8] text-sm flex items-center gap-2 flex-wrap">
+                  <span className="text-indigo-300 font-semibold">{institute.type}</span>
                   <span className="text-white/20">•</span>
                   <span>{institute.affiliation}</span>
                 </p>
-                <div className="flex items-center gap-4 text-xs text-[#94a3b8] mt-2.5 flex-wrap">
-                  <span className="flex items-center gap-1.5 text-indigo-300 font-medium">
+                <div className="flex items-center gap-4 text-xs text-[#94a3b8] mt-1 flex-wrap">
+                  <span className="flex items-center gap-1.5 text-indigo-300 font-medium bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
                     <Globe size={13} />
                     {institute.domain}
                   </span>
@@ -149,50 +149,50 @@ export default function InstitutionProfilePage() {
                 setEditForm({ ...institute });
                 setIsEditModalOpen(true);
               }}
-              className="bg-white/10 hover:bg-white/15 text-white font-bold text-xs px-4 py-2.5 rounded-xl border border-white/15 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer shrink-0 self-start md:self-center"
+              className="bg-indigo-600/20 hover:bg-indigo-600/30 text-white font-bold text-xs px-5 py-3 rounded-xl border border-indigo-500/40 transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer shrink-0 self-start"
             >
-              <Edit3 size={14} />
+              <Edit3 size={15} className="text-indigo-400" />
               <span>Edit Details</span>
             </button>
           </div>
 
           {/* ── Key Metrics Grid ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mt-6 pt-5 border-t border-white/10">
-            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/10">
+            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1">
                 Enrolled Users
               </span>
-              <span className="text-lg font-black text-white">4,850</span>
-              <span className="text-[10px] text-emerald-400 font-semibold block mt-0.5">● Active Protection</span>
+              <span className="text-xl font-black text-white">4,850</span>
+              <span className="text-[11px] text-emerald-400 font-semibold block mt-1">● Active Protection</span>
             </div>
 
-            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3.5">
+            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1">
                 Patrol Fleet Units
               </span>
-              <span className="text-lg font-black text-indigo-300">{institute.patrolVehiclesCount} PCR Units</span>
-              <span className="text-[10px] text-[#94a3b8] font-medium block mt-0.5">GPS Monitored</span>
+              <span className="text-xl font-black text-indigo-300">{institute.patrolVehiclesCount} PCR Units</span>
+              <span className="text-[11px] text-[#94a3b8] font-medium block mt-1">GPS Monitored</span>
             </div>
 
-            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3.5">
+            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1">
                 Campus Safe Havens
               </span>
-              <span className="text-lg font-black text-white">{institute.safeHavensCount} Verified Hubs</span>
-              <span className="text-[10px] text-emerald-400 font-medium block mt-0.5">24/7 Monitored</span>
+              <span className="text-xl font-black text-white">{institute.safeHavensCount} Verified Hubs</span>
+              <span className="text-[11px] text-emerald-400 font-medium block mt-1">24/7 Monitored</span>
             </div>
 
-            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3.5">
+            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8] block mb-1">
                 Police Station Link
               </span>
-              <span className="text-lg font-black text-red-400">450m</span>
-              <span className="text-[10px] text-[#94a3b8] font-medium block mt-0.5">Rajouri Garden PS</span>
+              <span className="text-xl font-black text-red-400">450m</span>
+              <span className="text-[11px] text-[#94a3b8] font-medium block mt-1">Rajouri Garden PS</span>
             </div>
           </div>
         </div>
 
-        {/* ── Tab Navigation ── */}
+        {/* ── Tab Navigation Strip ── */}
         <div className="flex gap-2 border-b border-white/10 pb-2">
           <button
             onClick={() => setActiveTab('details')}
@@ -235,30 +235,30 @@ export default function InstitutionProfilePage() {
         {activeTab === 'details' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-200">
             {/* Left 2 Cols: Safe Havens Table */}
-            <div className="lg:col-span-2 bg-[#12141e]/90 border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
+            <div className="lg:col-span-2 bg-[#121420] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-bold text-white">Designated Campus Safe Havens</h2>
                   <p className="text-xs text-[#94a3b8]">Active safe-refuge points with physical panic beacons and escort stations</p>
                 </div>
-                <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase">
+                <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-[10px] font-bold uppercase">
                   {safeHavens.length} Active Hubs
                 </span>
               </div>
 
-              <div className="flex flex-col gap-2.5 mt-2">
+              <div className="flex flex-col gap-3 mt-2">
                 {safeHavens.map(hub => (
                   <div
                     key={hub.id}
-                    className="bg-white/[0.03] hover:bg-white/[0.05] border border-white/5 rounded-xl p-4 flex items-center justify-between transition-colors"
+                    className="bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 rounded-xl p-4 flex items-center justify-between transition-colors"
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-3.5">
                       <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center shrink-0 mt-0.5">
                         <ShieldCheck className="w-5 h-5 text-indigo-400" />
                       </div>
                       <div>
                         <h3 className="text-sm font-bold text-white">{hub.name}</h3>
-                        <p className="text-xs text-[#94a3b8] flex items-center gap-1.5 mt-0.5">
+                        <p className="text-xs text-[#94a3b8] flex items-center gap-1.5 mt-1">
                           <MapPin size={12} className="text-indigo-400" />
                           {hub.location}
                         </p>
@@ -266,10 +266,10 @@ export default function InstitutionProfilePage() {
                     </div>
 
                     <div className="text-right shrink-0">
-                      <span className="bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-full text-[11px] font-bold border border-indigo-500/30">
+                      <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-[11px] font-bold border border-indigo-500/30">
                         {hub.status}
                       </span>
-                      <span className="text-[11px] text-[#94a3b8] block mt-1">
+                      <span className="text-[11px] text-[#94a3b8] block mt-1.5">
                         {hub.officers} Officers Stationed
                       </span>
                     </div>
@@ -279,21 +279,21 @@ export default function InstitutionProfilePage() {
             </div>
 
             {/* Right Col: Accreditation & Operational Compliance */}
-            <div className="bg-[#12141e]/90 border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-5">
+            <div className="bg-[#121420] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-5">
               <h2 className="text-lg font-bold text-white">Compliance &amp; Accreditations</h2>
 
               <div className="space-y-4 text-xs">
-                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 space-y-1">
-                  <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block">License &amp; Code</span>
+                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 space-y-1.5">
+                  <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block">License &amp; Accreditation</span>
                   <span className="text-white font-mono font-medium">{institute.licenseNumber}</span>
                 </div>
 
-                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 space-y-1">
+                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 space-y-1.5">
                   <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block">Security Operations Hotline</span>
                   <span className="text-indigo-300 font-mono font-bold text-sm">{institute.hotlinePhone}</span>
                 </div>
 
-                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 space-y-1">
+                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 space-y-1.5">
                   <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block">Campus Geofence Status</span>
                   <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
                     <CheckCircle2 size={14} />
@@ -301,9 +301,9 @@ export default function InstitutionProfilePage() {
                   </span>
                 </div>
 
-                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3.5 space-y-1">
+                <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 space-y-1.5">
                   <span className="text-[#94a3b8] font-bold uppercase tracking-wider text-[10px] block">Emergency Escort Service</span>
-                  <span className="text-white font-semibold">
+                  <span className="text-white font-semibold leading-relaxed">
                     Available 6:00 PM – 6:00 AM for Students &amp; Staff
                   </span>
                 </div>
@@ -314,7 +314,7 @@ export default function InstitutionProfilePage() {
 
         {/* ── TAB 2: SECURITY PERSONNEL DIRECTORY ── */}
         {activeTab === 'personnel' && (
-          <div className="bg-[#12141e]/90 border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-5 animate-in fade-in duration-200">
+          <div className="bg-[#121420] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-5 animate-in fade-in duration-200">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-white">Campus Security Officers &amp; First Responders</h2>
@@ -322,7 +322,7 @@ export default function InstitutionProfilePage() {
               </div>
               <button
                 onClick={() => alert('New Officer Provisioning is managed via your Institution Enterprise Administrator account.')}
-                className="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Plus size={14} />
                 <span>Add Officer</span>
@@ -333,29 +333,29 @@ export default function InstitutionProfilePage() {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-white/10 text-[#94a3b8] uppercase tracking-wider text-[10px]">
-                    <th className="py-3 px-4 font-bold">Officer Name</th>
-                    <th className="py-3 px-4 font-bold">Role &amp; Assignment</th>
-                    <th className="py-3 px-4 font-bold">Badge ID</th>
-                    <th className="py-3 px-4 font-bold">Direct Phone</th>
-                    <th className="py-3 px-4 font-bold">Assigned Shift</th>
-                    <th className="py-3 px-4 font-bold text-right">Status</th>
+                    <th className="py-3.5 px-4 font-bold">Officer Name</th>
+                    <th className="py-3.5 px-4 font-bold">Role &amp; Assignment</th>
+                    <th className="py-3.5 px-4 font-bold">Badge ID</th>
+                    <th className="py-3.5 px-4 font-bold">Direct Phone</th>
+                    <th className="py-3.5 px-4 font-bold">Assigned Shift</th>
+                    <th className="py-3.5 px-4 font-bold text-right">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {officers.map(officer => (
                     <tr key={officer.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-3.5 px-4 font-bold text-white flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-xs">
+                      <td className="py-4 px-4 font-bold text-white flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-xs">
                           {officer.name[0]}
                         </div>
                         <span>{officer.name}</span>
                       </td>
-                      <td className="py-3.5 px-4 text-[#94a3b8] font-medium">{officer.role}</td>
-                      <td className="py-3.5 px-4 text-indigo-300 font-mono font-bold">{officer.badge}</td>
-                      <td className="py-3.5 px-4 text-white font-mono">{officer.phone}</td>
-                      <td className="py-3.5 px-4 text-[#94a3b8]">{officer.shift}</td>
-                      <td className="py-3.5 px-4 text-right">
-                        <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full font-bold text-[10px]">
+                      <td className="py-4 px-4 text-[#94a3b8] font-medium">{officer.role}</td>
+                      <td className="py-4 px-4 text-indigo-300 font-mono font-bold">{officer.badge}</td>
+                      <td className="py-4 px-4 text-white font-mono">{officer.phone}</td>
+                      <td className="py-4 px-4 text-[#94a3b8]">{officer.shift}</td>
+                      <td className="py-4 px-4 text-right">
+                        <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-bold text-[10px]">
                           ● {officer.status}
                         </span>
                       </td>
@@ -371,9 +371,9 @@ export default function InstitutionProfilePage() {
         {activeTab === 'dispatch' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-200">
             {/* Police Integration Card */}
-            <div className="bg-[#12141e]/90 border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
+            <div className="bg-[#121420] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
                   <Shield className="w-6 h-6" />
                 </div>
                 <div>
@@ -382,7 +382,7 @@ export default function InstitutionProfilePage() {
                 </div>
               </div>
 
-              <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-2 text-xs">
+              <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-2.5 text-xs">
                 <div>
                   <span className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-wider block">Jurisdiction Station</span>
                   <span className="text-white font-bold text-sm">{institute.nearestPoliceStation}</span>
@@ -399,9 +399,9 @@ export default function InstitutionProfilePage() {
             </div>
 
             {/* Hospital Integration Card */}
-            <div className="bg-[#12141e]/90 border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="bg-[#121420] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
                   <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div>
@@ -410,7 +410,7 @@ export default function InstitutionProfilePage() {
                 </div>
               </div>
 
-              <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-2 text-xs">
+              <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-2.5 text-xs">
                 <div>
                   <span className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-wider block">Primary Medical Center</span>
                   <span className="text-white font-bold text-sm">{institute.nearestHospital}</span>
@@ -431,7 +431,7 @@ export default function InstitutionProfilePage() {
 
       {/* ── EDIT INSTITUTE PROFILE MODAL ── */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
           <div
             className="w-full max-w-lg rounded-2xl p-6 lg:p-8 relative border border-white/15 text-white shadow-2xl max-h-[90vh] overflow-y-auto"
             style={{ background: '#121522' }}
