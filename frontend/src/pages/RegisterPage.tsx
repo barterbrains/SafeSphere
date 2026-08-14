@@ -39,7 +39,11 @@ export default function RegisterPage() {
         <div style={{ background: 'rgba(18, 18, 30, 0.75)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 28, padding: '36px 32px', display: 'flex', flexDirection: 'column', gap: 20, boxShadow: '0 24px 50px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)' }}>
 
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+          <div
+            onClick={() => navigate('/')}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4, cursor: 'pointer' }}
+            title="Return to SafeSphere Home"
+          >
             <div style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #4f46e5, #3730a3)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(79,70,229,0.4)' }}>
               <Shield size={22} color="white" fill="white" />
             </div>

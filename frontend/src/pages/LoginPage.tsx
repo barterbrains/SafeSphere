@@ -99,7 +99,11 @@ export default function LoginPage() {
           }}
         />
 
-        <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: 32, maxWidth: 520 }}>
+        <div
+          onClick={() => navigate('/')}
+          style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: 32, maxWidth: 520, cursor: 'pointer' }}
+          title="Return to SafeSphere Home"
+        >
           {/* Pulsing Shield Emblem in Rich Indigo */}
           <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 76, height: 76 }}>
             <div
@@ -175,6 +179,16 @@ export default function LoginPage() {
             }} />
 
             <div>
+              {/* Mobile brand header link */}
+              <div
+                onClick={() => navigate('/')}
+                className="flex lg:hidden items-center gap-2.5 mb-4 cursor-pointer"
+                title="Return to SafeSphere Home"
+              >
+                <SafeSphereShieldLogo size={32} />
+                <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em' }}>SafeSphere</span>
+              </div>
+
               <h2 style={{ fontSize: '1.55rem', fontWeight: 800, color: '#FFFFFF', marginBottom: 4, letterSpacing: '-0.02em' }}>
                 Welcome Back
               </h2>
