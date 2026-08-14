@@ -156,8 +156,8 @@ export default function LandingPage() {
 
   const handleDemoLogin = () => {
     localStorage.setItem('safesphere_token', 'demo-token-xyz');
-    localStorage.setItem('safesphere_user', JSON.stringify({ id: 'demo-user-123', name: 'Demo User', role: 'consumer' }));
-    navigate('/home');
+    localStorage.setItem('safesphere_user', JSON.stringify({ id: 'demo-user-123', name: 'Command Agent', role: 'institution' }));
+    navigate('/institution/overview');
   };
 
   const capabilities = [

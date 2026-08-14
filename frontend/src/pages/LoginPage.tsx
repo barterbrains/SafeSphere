@@ -59,10 +59,10 @@ export default function LoginPage() {
     localStorage.setItem('safesphere_token', 'demo-token-xyz');
     localStorage.setItem('safesphere_user', JSON.stringify({
       id: 'demo-user-123',
-      name: 'Demo User',
-      role: 'consumer',
+      name: 'Command Agent',
+      role: 'institution',
     }));
-    navigate('/home');
+    navigate('/institution/overview');
   };
 
   return (

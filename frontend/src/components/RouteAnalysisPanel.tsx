@@ -44,7 +44,7 @@ export function SafeSphereSidebar({ onTriggerEmergency }: SafeSphereSidebarProps
   const navigate = useNavigate();
 
   const navItems = [
-    { label: 'Command Center', icon: Activity, path: '/routes', active: true },
+    { label: 'Command Center', icon: Activity, path: '/institution/overview', active: true },
     { label: 'Risk Analytics', icon: BarChart2, path: '/institution/analytics' },
     { label: 'Fleet Status', icon: Navigation, path: '/institution/heatmap' },
     { label: 'Safety Audits', icon: ShieldCheck, path: '/institution/incidents' },
