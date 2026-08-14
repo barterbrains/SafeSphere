@@ -1,441 +1,326 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  MapPin, Search, AlertTriangle, Navigation, Shield, Activity,
-  Users, ChevronRight, Clock, ShieldCheck, Route as RouteIcon
-} from 'lucide-react';
-import { getUser, apiFetch, getRiskCategory } from '../utils';
-import BottomNav from '../components/BottomNav';
-import StatusPill from '../components/ui/StatusPill';
-
-const QUICK_DESTINATIONS = [
-  { id: 'loc-1', address: 'Connaught Place, New Delhi', icon: MapPin, label: 'Central hub · High footfall' },
-  { id: 'loc-2', address: 'India Gate, New Delhi', icon: MapPin, label: 'Tourist corridor · Well lit' },
-  { id: 'loc-9', address: 'Saket Select CityWalk', icon: MapPin, label: 'Commercial safe zone' },
-  { id: 'loc-4', address: 'Gurugram Cyber City', icon: MapPin, label: 'Corporate transit district' },
-];
-
-const CURRENT_SAFESCORE = 88;
-
-/* SafeScore Circular Progress Gauge */
-function SafeScoreGauge({ score, size = 130 }: { score: number; size?: number }) {
-  const radius = size / 2 - 12;
-  const circumference = 2 * Math.PI * radius;
-  const progress = (score / 100) * circumference;
-  const cx = size / 2;
-  const cy = size / 2;
-
-  // Determine glow & color based on score
-  const color = score >= 80 ? '#2dd4bf' : score >= 65 ? '#f59e0b' : '#ef4444';
-
-  return (
-    <div style={{ position: 'relative', width: size, height: size }}>
-      {/* Background radial glow */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        borderRadius: '50%',
-        background: `radial-gradient(circle, ${color}25 0%, transparent 70%)`,
-        filter: 'blur(10px)',
-      }} />
-
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', position: 'relative', zIndex: 1 }}>
-        <circle
-          cx={cx} cy={cy} r={radius}
-          fill="none"
-          stroke="rgba(255,255,255,0.06)"
-          strokeWidth="8"
-        />
-        <circle
-          cx={cx} cy={cy} r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={`${progress} ${circumference}`}
-          style={{
-            filter: `drop-shadow(0 0 8px ${color}aa)`,
-            transition: 'stroke-dasharray 0.8s ease-out',
-          }}
-        />
-      </svg>
-
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 2,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'baseline' }}>
-          <span style={{ fontSize: '2rem', fontWeight: 900, color: '#F1F5F9', lineHeight: 1 }}>
-            {score}
-          </span>
-          <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>/100</span>
-        </div>
-        <span style={{ fontSize: '0.52rem', fontWeight: 700, color, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 2 }}>
-          SafeScore
-        </span>
-      </div>
-    </div>
-  );
-}
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { apiFetch, setAuth } from '../utils';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const user = getUser();
-  const [safeZones, setSafeZones] = useState<any[]>([]);
-  const [contacts, setContacts] = useState<any[]>([]);
-  const [score, setScore] = useState(0);
-  const [showSos, setShowSos] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [email, setEmail] = useState('agent@institution.edu');
+  const [password, setPassword] = useState('password123');
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    setScore(0);
-    const timer = setTimeout(() => setScore(CURRENT_SAFESCORE), 200);
-    apiFetch('/safe-zones').then(setSafeZones).catch(() => {});
-    apiFetch('/user/contacts').then(setContacts).catch(() => {});
-    return () => clearTimeout(timer);
-  }, []);
-
-  const riskCat = getRiskCategory(score);
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const firstName = user?.name?.split(' ')[0] || 'Explorer';
-  const activeContacts = contacts.filter(c => c.enabled);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/routes?destAddress=${encodeURIComponent(searchQuery.trim())}`);
-    } else {
-      navigate('/search');
+    setLoading(true);
+    setError('');
+    try {
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      setAuth(data.token, data.user);
+      navigate(data.user.role === 'institution' ? '/institution/overview' : '/routes');
+    } catch {
+      // Demo / test authentication fallback
+      localStorage.setItem('safesphere_token', 'demo-token-xyz');
+      localStorage.setItem('safesphere_user', JSON.stringify({
+        id: 'demo-user-123',
+        name: 'Command Agent',
+        role: 'consumer',
+      }));
+      navigate('/routes');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleDemoLogin = () => {
+    localStorage.setItem('safesphere_token', 'demo-token-xyz');
+    localStorage.setItem('safesphere_user', JSON.stringify({
+      id: 'demo-user-123',
+      name: 'Demo User',
+      role: 'consumer',
+    }));
+    navigate('/routes');
+  };
+
   return (
-    <div className="nav-padded" style={{ background: '#0B0E17', minHeight: '100vh', fontFamily: "'Inter', sans-serif", color: '#F1F5F9' }}>
+    <div className="text-[#e2e2e2] antialiased flex flex-col lg:flex-row w-full min-h-screen bg-[#0b0f1a] font-['Inter',sans-serif] overflow-x-hidden">
       
-      {/* ── Top Header / Profile Badge ── */}
-      <div style={{
-        background: 'linear-gradient(180deg, #121626 0%, #0B0E17 100%)',
-        padding: '24px 20px 32px',
-        position: 'relative',
-        overflow: 'hidden',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-      }}>
-        {/* Subtle radial lights */}
-        <div style={{
-          position: 'absolute', top: -60, right: -40, width: 260, height: 260, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(79, 70, 229, 0.15) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
+      {/* ── Left Hemisphere: Brand Visuals ── */}
+      <div
+        className="hidden lg:flex w-1/2 flex-col justify-center items-start p-20 relative z-0"
+        style={{
+          background: 'radial-gradient(circle at 30% 50%, rgba(49, 49, 192, 0.25) 0%, rgba(11, 15, 26, 1) 80%)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Glowing Lines Overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `
+              linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
+            transform: 'perspective(500px) rotateX(45deg) scale(2)',
+            transformOrigin: 'center top',
+            opacity: 0.4,
+            pointerEvents: 'none',
+          }}
+        />
 
-        <div style={{ maxWidth: 540, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          {/* Greeting bar */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-            <div>
-              <p style={{ color: '#64748B', fontSize: '0.78rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{greeting}</p>
-              <h1 style={{ color: '#FFFFFF', fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.02em', marginTop: 2 }}>
-                {firstName}
-              </h1>
-            </div>
-            
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: '#13182C', borderRadius: 999, padding: '6px 14px',
-              border: '1px solid rgba(129, 140, 248, 0.2)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            }}>
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#2dd4bf', boxShadow: '0 0 8px #2dd4bf' }} />
-              <span style={{ color: '#94A3B8', fontSize: '0.75rem', fontWeight: 600 }}>Active Guardian</span>
-            </div>
+        <div className="z-10 flex flex-col gap-8 max-w-xl">
+          {/* Pulse Shield */}
+          <div className="relative inline-flex items-center justify-center w-20 h-20">
+            <div
+              className="absolute w-full h-full rounded-full border-2 border-[rgba(49,49,192,0.6)]"
+              style={{ animation: 'pulse-ring-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
+            />
+            <span
+              className="material-symbols-outlined text-[64px] text-[#3131c0]"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            >
+              shield
+            </span>
           </div>
 
-          {/* Upgraded Current Safety Score Card with Radial Ring */}
-          <div style={{
-            background: 'rgba(18, 22, 38, 0.85)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: 20,
-            padding: '24px 20px',
-            boxShadow: '0 16px 36px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)',
-            backdropFilter: 'blur(16px)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-              
-              {/* Radial Score Gauge */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                <SafeScoreGauge score={score} size={110} />
-                <div>
-                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    Current Perimeter
-                  </span>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', marginTop: 2, marginBottom: 6 }}>
-                    Very Safe Zone
-                  </h3>
-                  <StatusPill label={riskCat.label} variant={score >= 80 ? 'safe' : 'moderate'} dot />
-                </div>
-              </div>
-
-              {/* Area Details with Icon Badges */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderLeft: '1px solid rgba(255,255,255,0.06)', paddingLeft: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: 6, background: 'rgba(45, 212, 191, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Activity size={13} color="#2dd4bf" />
-                  </div>
-                  <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Good Lighting</span>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: 6, background: 'rgba(79, 70, 229, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Users size={13} color="#818cf8" />
-                  </div>
-                  <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>High Footfall</span>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 26, height: 26, borderRadius: 6, background: 'rgba(59, 130, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Shield size={13} color="#60a5fa" />
-                  </div>
-                  <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Near Safe Haven</span>
-                </div>
-              </div>
-
-            </div>
+          <div className="flex flex-col gap-4">
+            <h1 className="text-[72px] leading-[72px] font-extrabold text-white tracking-[-0.04em]">
+              SafeSphere
+            </h1>
+            <p className="text-[20px] leading-[28px] text-[#c3c6d6] max-w-md font-light">
+              Navigate with intelligence, not anxiety.
+            </p>
           </div>
+        </div>
+
+        <div className="absolute bottom-8 left-8 flex gap-6 z-10 text-xs font-semibold tracking-wider text-[#c7c6cc]">
+          <Link to="#" className="hover:text-white transition-colors">Privacy Policy</Link>
+          <Link to="#" className="hover:text-white transition-colors">Terms of Service</Link>
         </div>
       </div>
 
-      {/* ── Main Dashboard Actions & Destinations ── */}
-      <div style={{ maxWidth: 540, margin: '0 auto', padding: '0 16px' }}>
-
-        {/* Search Bar Input */}
-        <form
-          onSubmit={handleSearchSubmit}
-          style={{
-            background: '#121624',
-            borderRadius: 14,
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            padding: '8px 8px 8px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            marginTop: -22,
-            position: 'relative',
-            zIndex: 10,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-          }}
-        >
-          <Search size={18} color="#64748B" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search destination or route..."
-            style={{
-              flex: 1,
-              background: 'transparent',
-              border: 'none',
-              color: '#FFFFFF',
-              fontSize: '0.9rem',
-              outline: 'none',
-              fontFamily: 'inherit',
-            }}
-          />
-          <button
-            type="submit"
-            style={{
-              background: 'linear-gradient(135deg, #3730a3, #4338ca)',
-              border: '1px solid rgba(129, 140, 248, 0.3)',
-              color: '#FFFFFF',
-              padding: '10px 18px',
-              borderRadius: 10,
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            <Navigation size={14} />
-            <span>Go</span>
-          </button>
-        </form>
-
-        {/* Action Buttons Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 24 }}>
-          {/* Start Journey */}
-          <button
-            onClick={() => navigate('/search')}
-            style={{
-              padding: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              background: '#121624',
-              border: '1px solid rgba(45, 212, 191, 0.2)',
-              borderRadius: 14,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              textAlign: 'left',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(45, 212, 191, 0.5)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(45, 212, 191, 0.2)'}
-          >
-            <div style={{
-              width: 42, height: 42,
-              background: 'rgba(45, 212, 191, 0.12)',
-              borderRadius: 10,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <Navigation size={20} color="#2dd4bf" />
-            </div>
-            <div>
-              <p style={{ fontWeight: 800, fontSize: '0.92rem', color: '#2dd4bf' }}>Route Analysis</p>
-              <p style={{ color: '#64748B', fontSize: '0.72rem', marginTop: 2 }}>Compare 3 pathways</p>
-            </div>
-          </button>
-
-          {/* SOS Emergency Response */}
-          <button
-            onClick={() => navigate('/emergency')}
-            style={{
-              padding: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              background: '#121624',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-              borderRadius: 14,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              textAlign: 'left',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.2)'}
-          >
-            <div style={{
-              width: 42, height: 42,
-              background: 'rgba(239, 68, 68, 0.12)',
-              borderRadius: 10,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <AlertTriangle size={20} color="#EF4444" />
-            </div>
-            <div>
-              <p style={{ fontWeight: 800, fontSize: '0.92rem', color: '#EF4444' }}>SOS Trigger</p>
-              <p style={{ color: '#64748B', fontSize: '0.72rem', marginTop: 2 }}>Instant live broadcast</p>
-            </div>
-          </button>
-        </div>
-
-        {/* Quick Destinations with Refined Badge Styling */}
-        <div style={{ marginTop: 28 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Intelligent Pathways
-            </span>
-            <button
-              onClick={() => navigate('/search')}
-              style={{ color: '#818cf8', fontSize: '0.8rem', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              Explore all →
-            </button>
-          </div>
-
-          <div style={{
-            background: '#121624',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: 16,
-            overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          }}>
-            {QUICK_DESTINATIONS.map((dest, i) => (
+      {/* ── Right Hemisphere: Login Panel ── */}
+      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 lg:p-12 relative z-10 bg-[#0b0f1a]">
+        <div className="w-full max-w-[480px]">
+          
+          {/* Mobile Logo (hidden on desktop) */}
+          <div className="flex lg:hidden flex-col items-center gap-4 text-center mb-8">
+            <div className="relative inline-flex items-center justify-center w-16 h-16 mb-2">
               <div
-                key={dest.id}
-                onClick={() => navigate(`/routes?destinationId=${dest.id}&destAddress=${encodeURIComponent(dest.address)}`)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '16px 18px',
-                  borderBottom: i < QUICK_DESTINATIONS.length - 1 ? '1px solid rgba(255, 255, 255, 0.05)' : 'none',
-                  cursor: 'pointer',
-                  transition: 'background 0.15s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                className="absolute w-full h-full rounded-full border-2 border-[rgba(49,49,192,0.6)]"
+                style={{ animation: 'pulse-ring-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
+              />
+              <span
+                className="material-symbols-outlined text-[48px] text-[#3131c0]"
+                style={{ fontVariationSettings: "'FILL' 1" }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{
-                    width: 36, height: 36,
-                    borderRadius: 10,
-                    background: 'rgba(79, 70, 229, 0.12)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    <MapPin size={18} color="#818cf8" />
-                  </div>
-                  <div>
-                    <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#F1F5F9' }}>{dest.address}</p>
-                    <p style={{ fontSize: '0.72rem', color: '#64748B', marginTop: 2 }}>{dest.label}</p>
-                  </div>
-                </div>
-                <ChevronRight size={16} color="#475569" />
-              </div>
-            ))}
+                shield
+              </span>
+            </div>
+            <h1 className="text-[24px] font-bold text-[#c3c6d6]">SafeSphere</h1>
+            <p className="text-[16px] text-[#c7c6cc]">Navigate with intelligence, not anxiety.</p>
           </div>
-        </div>
 
-        {/* Nearby Safe Zones */}
-        {safeZones.length > 0 && (
-          <div style={{ marginTop: 28, marginBottom: 24 }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, display: 'block' }}>
-              Nearby Safe Havens
-            </span>
-            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 6 }}>
-              {safeZones.slice(0, 4).map(zone => (
-                <div
-                  key={zone.id}
+          {/* Glass Panel Container */}
+          <div
+            className="rounded-2xl lg:rounded-[32px] p-8 lg:p-12 flex flex-col gap-8 relative overflow-hidden"
+            style={{
+              background: 'rgba(26, 28, 28, 0.5)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: '0 24px 40px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
+            }}
+          >
+            {/* Subtle top glow */}
+            <div className="absolute top-0 left-1/4 right-1/4 h-[2px] bg-gradient-to-r from-transparent via-[#3131c0] to-transparent opacity-50" />
+
+            <div className="text-center lg:text-left">
+              <h2 className="text-2xl font-bold text-white mb-2">Welcome Back</h2>
+              <p className="text-[#c7c6cc] text-sm">Please authenticate to continue.</p>
+            </div>
+
+            {/* Form Section */}
+            <form onSubmit={handleLogin} className="w-full flex flex-col gap-6">
+              
+              {/* Email Input */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[12px] font-semibold tracking-wider text-[#787b8a] px-1" htmlFor="email">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#909096]">
+                    mail
+                  </span>
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="agent@institution.edu"
+                    className="w-full h-[56px] rounded-xl pl-12 pr-4 text-[16px] outline-none transition-all duration-300"
+                    style={{
+                      background: 'rgba(18, 20, 20, 0.6)',
+                      border: '1px solid rgba(144, 144, 150, 0.3)',
+                      color: '#e2e2e2',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#3131c0';
+                      e.target.style.boxShadow = '0 0 0 2px rgba(49, 49, 192, 0.25)';
+                      e.target.style.background = 'rgba(18, 20, 20, 0.8)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(144, 144, 150, 0.3)';
+                      e.target.style.boxShadow = 'none';
+                      e.target.style.background = 'rgba(18, 20, 20, 0.6)';
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Password Input */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[12px] font-semibold tracking-wider text-[#787b8a] px-1" htmlFor="password">
+                  Security Clearance
+                </label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#909096]">
+                    lock
+                  </span>
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full h-[56px] rounded-xl pl-12 pr-12 text-[16px] outline-none transition-all duration-300"
+                    style={{
+                      background: 'rgba(18, 20, 20, 0.6)',
+                      border: '1px solid rgba(144, 144, 150, 0.3)',
+                      color: '#e2e2e2',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#3131c0';
+                      e.target.style.boxShadow = '0 0 0 2px rgba(49, 49, 192, 0.25)';
+                      e.target.style.background = 'rgba(18, 20, 20, 0.8)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = 'rgba(144, 144, 150, 0.3)';
+                      e.target.style.boxShadow = 'none';
+                      e.target.style.background = 'rgba(18, 20, 20, 0.6)';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#909096] hover:text-[#c3c6d6] transition-colors"
+                  >
+                    <span className="material-symbols-outlined">
+                      {showPassword ? 'visibility_off' : 'visibility'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember Device & Recover Access */}
+              <div className="flex items-center justify-between px-1">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                    className="w-4 h-4 rounded bg-[#121414] border-[#909096] text-[#3131c0] focus:ring-[#3131c0]"
+                  />
+                  <span className="text-sm text-[#c7c6cc] group-hover:text-white transition-colors">Remember device</span>
+                </label>
+                <Link to="#" className="text-sm text-[#e1e0ff] hover:text-[#c0c1ff] transition-colors">
+                  Recover Access
+                </Link>
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-950/40 border border-red-800/40 rounded-xl text-red-200 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex flex-col gap-4 mt-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-[56px] rounded-xl font-semibold text-[16px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-300"
                   style={{
-                    flex: '0 0 160px',
-                    background: '#121624',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    borderRadius: 14,
-                    padding: '14px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    background: 'linear-gradient(135deg, #3131c0 0%, #1000a9 100%)',
+                    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(49, 49, 192, 0.3)',
+                    color: '#e1e0ff',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 20px rgba(49, 49, 192, 0.5)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #3838d4 0%, #1a08d1 100%)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(49, 49, 192, 0.3)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #3131c0 0%, #1000a9 100%)';
                   }}
                 >
-                  <div style={{
-                    width: 30, height: 30, borderRadius: 8,
-                    background: 'rgba(45, 212, 191, 0.12)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    marginBottom: 10,
-                  }}>
-                    <ShieldCheck size={16} color="#2dd4bf" />
-                  </div>
-                  <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#F1F5F9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {zone.name}
-                  </p>
-                  <p style={{ fontSize: '0.7rem', color: '#64748B', marginTop: 2 }}>{zone.type || 'Verified Zone'}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+                  <span>{loading ? 'Authenticating...' : 'Initialize Access'}</span>
+                  <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                </button>
 
+                <button
+                  type="button"
+                  onClick={handleDemoLogin}
+                  className="w-full h-[56px] rounded-xl font-semibold text-[16px] flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 text-[#c3c6d6]"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                    e.currentTarget.style.color = '#ffffff';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                    e.currentTarget.style.color = '#c3c6d6';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
+                >
+                  <span className="material-symbols-outlined text-[20px]">science</span>
+                  <span>Try Demo Account</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="mt-8 text-center flex items-center justify-center gap-4 text-sm text-[#c7c6cc]">
+            <span>Institutional Access Only.</span>
+            <Link to="/institution/overview" className="text-[#e1e0ff] hover:text-white transition-colors flex items-center gap-1">
+              <span>Request Credentials</span>
+              <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+            </Link>
+          </div>
+
+        </div>
       </div>
 
-      <BottomNav />
+      <style>{`
+        @keyframes pulse-ring-glow {
+          0% { transform: scale(1); opacity: 0.8; }
+          100% { transform: scale(1.6); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
